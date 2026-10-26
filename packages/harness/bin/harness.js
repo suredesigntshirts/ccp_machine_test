@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest } from '../src/index.js';
 
 const HELP = `harness <command> [options]
 
@@ -21,6 +21,8 @@ const HELP = `harness <command> [options]
   decisions                      append logPrecedent effects to decisions.jsonl in the store and ack them
   standin <class>                the stand-in's autonomy for a decision class (shadow, recommend or act),
                                  worked out from decisions.jsonl; use it as STAND_IN_ANSWERED's autonomy
+  digest [--day YYYY-MM-DD]      send DIGEST_DUE once per UTC day, write digests/<day>.md in the store
+                                 and ack publishDigest; the host posts the text
   page [--html FILE] [--title T] [--standalone]
                                  render mission control (default .harness/mission-control.html) and
                                  one page per item beside it (items/<id>.html), linked from its row,
@@ -42,7 +44,8 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     samples: { type: 'string', default: '.ledger/usage.json' },
     html: { type: 'string' },
     title: { type: 'string', default: 'Mission control' },
-    standalone: { type: 'boolean', default: false }
+    standalone: { type: 'boolean', default: false },
+    day: { type: 'string' }
   }
 });
 const store = openStore(o.dir);
@@ -80,6 +83,12 @@ try {
       if (!args[0]) throw new Error('standin needs a decision class, such as plan or accept');
       print(ladder(readDecisionLog(store), args[0]));
       break;
+    case 'digest': {
+      const { file, acked, text } = writeDigest(store, o.day ? { day: o.day } : {});
+      console.log(text);
+      console.error(`wrote ${file}, acked ${acked}`);
+      break;
+    }
     case 'page': {
       const st = status(store);
       if (!st) throw new Error(`no harness in ${o.dir}`);

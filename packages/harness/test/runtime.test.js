@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemRecords, budgetEvents, logPrecedents, readDecisionLog, classStats, renderDecisionLog, ladder } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemRecords, budgetEvents, logPrecedents, readDecisionLog, classStats, renderDecisionLog, ladder, writeDigest } from '../src/index.js';
 
 const fresh = (input) => {
   const store = openStore(mkdtempSync(join(tmpdir(), 'harness-')));
@@ -147,4 +147,20 @@ test('the stand-in ladder climbs after 20 agreeing decisions and drops a rung on
   assert.equal(ladder([row('reject'), row('reject')], 'plan').autonomy, 'shadow');
   assert.equal(ladder([row('reject'), ...agree(20)], 'plan').autonomy, 'recommend', 'climbing back takes 20 more');
   assert.equal(ladder(agree(20), 'accept').autonomy, 'recommend', 'classes are separate');
+});
+
+test('the digest goes out once per UTC day and says what finished, what runs and what waits', () => {
+  const store = fresh();
+  apply(store, { type: 'REQUEST_RECEIVED', request: { id: 'a', tier: 0, title: 'Quick fix' } }, { now: '2026-10-26T09:00:00Z' });
+  for (const t of ['RUN_SUCCEEDED', 'RUN_SUCCEEDED', 'CHECKS_PASSED', 'MERGED']) apply(store, { type: t }, { to: 'item:a', now: '2026-10-26T10:00:00Z' });
+  apply(store, { type: 'REQUEST_RECEIVED', request: { id: 'p', tier: 2 } });
+  apply(store, { type: 'RUN_SUCCEEDED' }, { to: 'item:p' });
+  apply(store, { type: 'STAND_IN_ANSWERED', answer: sure }, { to: 'item:p/decision:p:plan:1' });
+  const first = writeDigest(store, { day: '2026-10-26' });
+  assert.equal(first.acked, 1);
+  assert.match(first.text, /Finished today \(1\)\*\*\n- a: Quick fix/);
+  assert.match(first.text, /Waiting on you \(1\)\*\*\n- p: plan gate/);
+  const again = writeDigest(store, { day: '2026-10-26' });
+  assert.equal(again.acked, 0, 'a second run the same day queues no second digest');
+  assert.equal(store.events().filter((e) => e.event.type === 'DIGEST_DUE').length, 1);
 });
