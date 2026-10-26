@@ -81,7 +81,8 @@ again in every shell command, since variables do not carry over.
 
 3. **Take requests, then refresh the pages.** Mission control carries a request box that saves to its
    Artifact database. List its `requests` collection with `ArtifactData` (action `list`, the mission
-   control URL), save the result to a file, and run `$H intake <file>`. It files each new row as
+   control URL, `out_dir: <scratchpad>/rb`) and run `$H intake <scratchpad>/rb/requests`: it reads each
+   `<doc_id>.json` there, and also takes the inline list text saved to a file. It files each new row as
    `REQUEST_RECEIVED` (id `req-<row id>`, so a row read twice files once) and prints `updates`; write
    them back in one `ArtifactData` `batch` of `update`s, so the person sees "filed as <item>" with a link.
    The Artifact tool publishes only files under the working directory or the scratchpad, so render
