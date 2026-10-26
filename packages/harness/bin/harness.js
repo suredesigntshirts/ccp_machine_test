@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair , writeRetro, retroDue, calibration, canaryRequest, canaryReport, intakeRows, readRows, dayAudit, answerAudit, auditCard, fromGithub, readCheck, initCheck, checkVerdict, acceptBlocked, requestOf } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair , writeRetro, retroDue, calibration, canaryRequest, canaryReport, intakeRows, readRows, dayAudit, answerAudit, auditCard, fromGithub, readCheck, initCheck, checkVerdict, acceptBlocked, requestOf, acceptance, acceptanceText } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   help, --help, -h               show this help
@@ -35,6 +35,9 @@ const HELP = `harness <command> [options]
                                  expect, one line each; mark each [met], [unmet] or [unclear] with
                                  evidence. Prints the verdict; exits 1 unless every line is met. send
                                  refuses a stand-in approve on an accept gate until it is
+  acceptance [--ledger F] [--text]  the PRD's v1 acceptance criteria against this store: met, not met or
+                                 unknown, each with its evidence (peak in flight, the person's touches by
+                                 tier, scenarios, duplicate ids; --ledger checks turn costs)
   audit [--day D] [--answer N]   the day's stand-in audit: up to 3 decisions the stand-in made alone, picked
                                  once a day (audits/<day>.json); prints request_decision arguments for one
                                  card. --answer records the tap: 0 confirms all, N reverses pick N
@@ -88,6 +91,8 @@ try {
     options: {
       dir: { type: 'string', default: process.env.HARNESS_DIR ?? '.harness' },
       wip: { type: 'string' },
+      ledger: { type: 'string' },
+      text: { type: 'boolean' },
       to: { type: 'string' },
       id: { type: 'string' },
       outcome: { type: 'string', default: 'done' },
@@ -194,6 +199,12 @@ try {
       const v = checkVerdict(lines);
       print({ ...v, lines });
       if (!v.allMet) process.exitCode = 1;
+      break;
+    }
+    case 'acceptance': {
+      const rows = acceptance(store, { ledgerFile: o.ledger });
+      if (o.text) console.log(acceptanceText(rows));
+      else print(rows);
       break;
     }
     case 'audit': {
