@@ -73,13 +73,18 @@ again in every shell command, since variables do not carry over.
    `root: <scratchpad>/mc` and those paths as `files`, to the same Artifact as before (read it once
    first in a new thread, or the publish is refused).
 
-4. **Refresh the ledger report.** `node $HOME/harness/packages/ledger/bin/ledger.js refresh --title "Session ledger" --html <scratchpad>/ledger/report.html`
+4. **File the turn ledgers.** `node $HOME/harness/packages/ledger/bin/ledger.js file` files this session's
+   transcripts in `/mnt/project-files/harness/ledger/sessions`; for a worker thread, save its `list_events`
+   result events to a .json file and pass that path. Put `"session": "<session id>"` on each item's
+   `RUN_SUCCEEDED` events so its page lists the turns that worked on it.
+
+5. **Refresh the ledger report.** `node $HOME/harness/packages/ledger/bin/ledger.js refresh --title "Session ledger" --html <scratchpad>/ledger/report.html`
    merges the sessions the plugin filed in `/mnt/project-files/harness/ledger/sessions` into
    `.ledger/ledger.json` and renders them with `.ledger/usage.json`'s budget; publish it to the ledger report
    Artifact (https://claude.ai/artifact/KG3nqfYx8JY9PXeWJowbSS). Run it from the same folder as the usage
    step below, so both use one `.ledger/`.
 
-5. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
+6. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
    `kinds: ["rate_limit_event"]`, `limit: 100`), save it, then `ledger usage <file>` and
    `$H usage --samples .ledger/usage.json`. It also sends a `TICK`: with no reading newer than 2 hours the budget drains,
    so fetch a fresh reading at least that often while work is in flight (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`

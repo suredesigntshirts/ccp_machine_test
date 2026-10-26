@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { itemTurns } from '../src/item-page.js';
 import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemRecords, budgetEvents, logPrecedents, readDecisionLog, classStats, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter } from '../src/index.js';
 const fresh = (input) => {
   const store = openStore(mkdtempSync(join(tmpdir(), 'harness-')));
@@ -210,4 +211,16 @@ test('stalled lists in-flight items quiet for longer than the limit, and the pag
   assert.equal(parseAfter('2h'), 72e5);
   assert.throws(() => parseAfter('soon'), /--after/);
   assert.match(renderPage(status(store), { events: store.events() }), /moved \d+m ago/);
+});
+
+test('an item page lists the turns of the sessions named on its events, inside its window', () => {
+  const events = [
+    { at: '2026-10-26T10:00:00Z', to: 'harness', event: { type: 'REQUEST_RECEIVED', request: { id: 'a' } } },
+    { at: '2026-10-26T11:00:00Z', to: 'item:a', event: { type: 'RUN_SUCCEEDED', session: 's1' } },
+    { at: '2026-10-26T12:00:00Z', to: 'item:a', event: { type: 'MERGED' } }
+  ];
+  const t = (index, start, end) => ({ index, start, end, label: `t${index}` });
+  const sessions = { s1: { turns: [t(1, '2026-10-26T08:00:00Z', '2026-10-26T09:00:00Z'), t(2, '2026-10-26T09:30:00Z', '2026-10-26T10:30:00Z'), t(3, '2026-10-26T13:00:00Z', '2026-10-26T13:10:00Z')] } };
+  assert.deepEqual(itemTurns({ done: true }, events, sessions).map((x) => x.index), [2]);
+  assert.match(renderItemPage({ id: 'a', done: true, state: 'done', decisions: [] }, { events, sessions }), /s1 #2/);
 });
