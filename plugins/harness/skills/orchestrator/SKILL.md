@@ -115,6 +115,15 @@ through like any item: on branch `chore/canary-<day>`, write the day to `canary/
 wait for CI, then merge. On later wakes, run `$H canary --check`. If it exits 1 (failed, or not merged
 2 hours after the request), post its one attention line to the person once, instead of one message per
 stuck item. The digest shows the canary's stage times, and leads with it when a stage is slow or failed.
+## Once a day: the stand-in audit
+
+The stand-in's own decisions never test it, so ask the person to check a few. After the canary, run
+`$H audit`. If it prints a `card`, post it with `request_decision`: up to 3 stand-in decisions, where
+option 0 confirms them all and option N reverses pick N. When the tap comes back, run
+`$H audit --answer <option index>`. That writes the person's decisions into the log, which calibration
+and the ladder learn from. A reversal only demotes the class; it never undoes a merge. `$H doctor` warns
+when a class goes more than 20 stand-in decisions without one of these checks.
+
 ## Weekly: the retro
 
 When `$H retro --due` exits 0 (7 days, or 20 merges, since the last retro), run `$H retro`. It writes
