@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ledger: turn-level audit of Claude Code sessions. Run `ledger help`.
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
@@ -12,6 +12,8 @@ const HELP = `ledger <command> [options]
                                  ~/.claude/projects). Writes --out (default .ledger/ledger.json).
   events <file ...>              Add sessions from saved list_events output (result events) to --out's
                                  ledger: for sessions whose transcripts are not in this container.
+  collect [dir ...]              Merge the session files the harness plugin files in the Library
+                                 (default /mnt/project-files/harness/ledger/sessions) into --out
   usage <file ...>               Add usage-window samples from saved rate_limit_event JSON (list_events
                                  output, JSON or JSONL) to --samples (default .ledger/usage.json), then
                                  print today's budget status.
@@ -72,6 +74,22 @@ switch (cmd) {
     ledger.sessions = [...ledger.sessions.filter((s) => !ids.has(s.sessionId)), ...added];
     write(o.out, JSON.stringify(ledger, null, 1));
     console.log(`${added.length} sessions from events (${added.reduce((a, s) => a + s.turns.length, 0)} turns) -> ${o.out}`);
+    break;
+  }
+  case 'collect': {
+    // Session files the harness plugin's Stop hook files in the Library, one per session.
+    const ledger = readJson(o.out, { generatedAt: new Date().toISOString(), version: 1, sessions: [], usage: [] });
+    const dirs = args.length ? args : ['/mnt/project-files/harness/ledger/sessions'];
+    const added = dirs.flatMap((d) =>
+      readdirSync(d)
+        .filter((f) => f.endsWith('.json') && !f.startsWith('.'))
+        .map((f) => readJson(join(d, f), null)?.session)
+        .filter(Boolean)
+    );
+    const ids = new Set(added.map((s) => s.sessionId));
+    ledger.sessions = [...ledger.sessions.filter((s) => !ids.has(s.sessionId)), ...added];
+    write(o.out, JSON.stringify(ledger, null, 1));
+    console.log(`${added.length} filed sessions merged -> ${o.out}`);
     break;
   }
   case 'usage': {
