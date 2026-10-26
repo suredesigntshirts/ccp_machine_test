@@ -1,0 +1,32 @@
+# @ccp/harness
+
+The harness spec and the runtime that drives it.
+
+- `spec/*.machine.json`: the XState machines as plain JSON (the SPEC the harness is built against).
+  `npm run spec:render -w @ccp/harness` regenerates `spec/SPEC.md` (Mermaid diagrams). The JSON also
+  loads in XState v6 (`machineFromJSON`); the v6 check lives in ccp_machine `harness/spec/portable.test.js`.
+- `src/machines.js`: binds the JSON to XState v5. Effects that leave the machine go to a sink as data.
+- `src/runtime.js`: the backend-workflow loop. Every wake restores the root actor from the store,
+  applies one event, persists, and queues the effects that event asked for. Event ids make it idempotent.
+- `src/store.js`: a folder per harness. `state.json` is replaced whole under a lock with
+  compare-and-set on its version; `events.jsonl`, `outbox.jsonl` and `acks.jsonl` are append-only.
+- `src/page.js`: mission control, one page with what needs the person, what is in flight, the host's
+  to-do and recent events.
+
+## Use
+
+```sh
+harness init --wip 3
+harness send '{"type":"DAY_STARTED","sevenDay":0.07,"fiveHour":0.04}' --to budget --id day-2026-10-26
+harness send '{"type":"REQUEST_RECEIVED","request":{"id":"a","tier":1,"title":"Fix login"}}' --id req-a
+harness send '{"type":"RUN_SUCCEEDED"}' --to item:a
+harness status                      # summary JSON; decisions carry their address
+harness send '{"type":"PERSON_DECIDED","choice":"approve"}' --to item:a/decision:a:plan:1
+harness effects                     # what the host still has to do
+harness ack e3.0 --note "posted"
+harness page --standalone           # .harness/mission-control.html
+```
+
+The host (an orchestrator thread) is the only writer. It runs each effect (dispatch a run, post a
+decision card, merge a PR), acknowledges it, and turns what comes back (CI result, a person's tap)
+into the next `send`.
