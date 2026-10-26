@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, runScenarios } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -14,6 +14,7 @@ const HELP = `harness <command> [options]
                                  --id makes the send idempotent. Prints the effects it queued.
   usage [--samples FILE]         feed saved usage samples (ledger usage, default .ledger/usage.json)
                                  to the budget actor; a stop or soft limit reaches the scheduler
+  stalled [--after 60m]          list in-flight items with no event for longer than --after, oldest first
   tick [--now ISO]               tell the budget the time, so a reading older than 2 hours drains it
   status                         print the summary as JSON
   effects                        print effects the host has not acknowledged
@@ -23,6 +24,8 @@ const HELP = `harness <command> [options]
                                  worked out from decisions.jsonl; use it as STAND_IN_ANSWERED's autonomy
   digest [--day YYYY-MM-DD]      send DIGEST_DUE once per UTC day, write digests/<day>.md in the store
                                  and ack publishDigest; the host posts the text
+  replay                         rebuild the harness from events.jsonl on a scratch copy and compare state
+                                 and effects with the store; exits 1 on a difference
   doctor                         check the store (version gaps, unknown acks, effects pending over a day,
                                  a stale lock, a snapshot that will not restore); exits 1 on a problem
   scenarios [FILE...]            play golden event stories (default packages/harness/scenarios/*.json) on
@@ -53,6 +56,7 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     standalone: { type: 'boolean', default: false },
     day: { type: 'string' },
     url: { type: 'string' },
+    after: { type: 'string', default: '60m' },
     sessions: { type: 'string' },
     now: { type: 'string' }
   }
@@ -92,6 +96,9 @@ try {
       print({ budget: st.budget, scheduler: st.state.scheduler });
       break;
     }
+    case 'stalled':
+      print(stalled(status(store), store.events(), { afterMs: parseAfter(o.after) }));
+      break;
     case 'tick':
       tick(o.now ?? new Date().toISOString());
       print(status(store).budget);
@@ -116,6 +123,12 @@ try {
       const { file, acked, text } = writeDigest(store, o.day ? { day: o.day } : {});
       console.log(text);
       console.error(`wrote ${file}, acked ${acked}`);
+      break;
+    }
+    case 'replay': {
+      const r = replay(store);
+      print(r);
+      if (!r.ok) process.exitCode = 1;
       break;
     }
     case 'doctor': {

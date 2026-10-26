@@ -27,7 +27,7 @@ again in every shell command, since variables do not carry over.
 
 ## Every wake
 
-0. **Check the store.** `$H doctor` must print `"ok": true`. If it lists problems, change nothing:
+0. **Check the store.** `$H doctor` (which also replays the event log) must print `"ok": true`. If it lists problems, change nothing:
    report them in the thread and stop.
 
 1. **Turn what happened into events.** One `send` per fact, with an `--id` taken from the fact so a
@@ -89,6 +89,11 @@ again in every shell command, since variables do not carry over.
    `$H usage --samples .ledger/usage.json`. It also sends a `TICK`: with no reading newer than 2 hours the budget drains,
    so fetch a fresh reading at least that often while work is in flight (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
+
+7. **Schedule the check-in.** While any item is in flight, end the wake with a `send_later` check-in:
+   60 minutes, doubling each time nothing changed, at most 4 in a row. On the check-in, run
+   `$H stalled --after 60m`; for each item it lists, read its worker thread and turn what you find into
+   events, or send `BLOCK` with the reason.
 
 ## Rules
 
