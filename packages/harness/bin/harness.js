@@ -4,8 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor } from '../src/index.js';
-
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -25,6 +24,8 @@ const HELP = `harness <command> [options]
                                  and ack publishDigest; the host posts the text
   doctor                         check the store (version gaps, unknown acks, effects pending over a day,
                                  a stale lock, a snapshot that will not restore); exits 1 on a problem
+  card <effect-id> [--url U]     print request_decision arguments for a postDecisionCard effect; a tap on
+                                 option i is PERSON_DECIDED {choice: choices[i]} to address, --id <card id>
   page [--html FILE] [--title T] [--standalone]
                                  render mission control (default .harness/mission-control.html) and
                                  one page per item beside it (items/<id>.html), linked from its row,
@@ -47,7 +48,8 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     html: { type: 'string' },
     title: { type: 'string', default: 'Mission control' },
     standalone: { type: 'boolean', default: false },
-    day: { type: 'string' }
+    day: { type: 'string' },
+    url: { type: 'string' }
   }
 });
 const store = openStore(o.dir);
@@ -95,6 +97,12 @@ try {
       const report = doctor(store);
       print(report);
       if (!report.ok) process.exitCode = 1;
+      break;
+    }
+    case 'card': {
+      const effect = store.outbox().find((e) => e.id === args[0]);
+      if (!effect) throw new Error(`no effect ${args[0]}`);
+      print(cardFor(effect, { itemUrl: o.url }));
       break;
     }
     case 'page': {
