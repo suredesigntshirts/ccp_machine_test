@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog } from '../src/index.js';
 
 const HELP = `harness <command> [options]
 
@@ -18,9 +18,11 @@ const HELP = `harness <command> [options]
   status                         print the summary as JSON
   effects                        print effects the host has not acknowledged
   ack <effect-id>... [--outcome done|failed] [--note TEXT]
+  decisions                      append logPrecedent effects to decisions.jsonl in the store and ack them
   page [--html FILE] [--title T] [--standalone]
                                  render mission control (default .harness/mission-control.html) and
-                                 one page per item beside it (items/<id>.html), linked from its row;
+                                 one page per item beside it (items/<id>.html), linked from its row,
+                                 and the decision log (decisions.html);
                                  publish those as the Artifact's supporting files
 
   --dir DIR                      store folder (default $HARNESS_DIR, else .harness); an orchestrator
@@ -69,6 +71,9 @@ try {
     case 'ack':
       print(ack(store, args, { outcome: o.outcome, note: o.note }));
       break;
+    case 'decisions':
+      print(logPrecedents(store));
+      break;
     case 'page': {
       const st = status(store);
       if (!st) throw new Error(`no harness in ${o.dir}`);
@@ -83,7 +88,8 @@ try {
         writeFileSync(path, renderItemPage(item, records));
         return itemHref(item.id);
       });
-      print({ page: file, files: items });
+      writeFileSync(join(dirname(file), 'decisions.html'), renderDecisionLog(readDecisionLog(store), { back: './' }));
+      print({ page: file, files: [...items, 'decisions.html'] });
       break;
     }
     default:
