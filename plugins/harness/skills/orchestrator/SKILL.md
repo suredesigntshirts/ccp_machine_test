@@ -41,6 +41,7 @@ next actions. Keep anything the machines do not know (a card posted by hand, a c
    | What happened | Event | Address | Id |
    |---|---|---|---|
    | New request from the person or coordinator | `REQUEST_RECEIVED` with `request: {id, title, project, tier, url?}` | harness | `req-<id>` |
+   | A `harness-backlog` issue to work | `$H issue-request <file>` with the issue's `gh api repos/O/R/issues/N` JSON: id, tier and expect come from its `Item id:` and `Expect:` lines | harness | `req-issue<N>` |
    | A triage or build run you dispatched finished | `RUN_SUCCEEDED` or `RUN_FAILED` | `item:<id>` | `run-<thread or PR>-<step>` |
    | CI on the item's PR (this is the verify step's result) | `CHECKS_PASSED` or `CHECKS_FAILED` | `item:<id>` | `ci-<sha>` |
    | The PR merged, or the merge failed | `MERGED` or `MERGE_FAILED` | `item:<id>` | `merge-<pr>` |
