@@ -102,3 +102,5 @@ again in every shell command, since variables do not carry over.
 - Never run two orchestrators on one store. A held lock error means another writer is active: stop
   and say so.
 - Tier 2 and 3 decisions always go to the person in v1.
+- When the harness misbehaves on a real store, add a scenario to `packages/harness/scenarios/` that
+  reproduces it (failing first), then fix the spec, so the suite grows from use.
