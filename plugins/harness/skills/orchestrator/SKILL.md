@@ -49,6 +49,11 @@ again in every shell command, since variables do not carry over.
    | Something blocks the item | `BLOCK`, later `UNBLOCKED` | `item:<id>` | |
    | The person drops the item | `CANCEL` | `item:<id>` | the person's message id |
 
+   For a GitHub PR event, save the `<event source="github" ...>` text to a file and run
+   `$H from-github <file>` instead of writing the CI or merge row yourself. It finds the item from the
+   `pr` on its events, sends `CHECKS_PASSED`, `CHECKS_FAILED` or `MERGED` with the ids above (`ci-<sha7>`,
+   `merge-pr<N>`), acks the merge effect, and reports `stale` when the item is not waiting for it.
+
    The verify step has no `RUN_SUCCEEDED`: the item ignores it while verifying, and only the CI result
    moves it on. Put `"pr": "<url>"` on the build's `RUN_SUCCEEDED`, the CI event and `MERGED`, so the
    item page links the PR (no event stores it in the machine). Give a request `expect` (what done looks
@@ -115,6 +120,15 @@ through like any item: on branch `chore/canary-<day>`, write the day to `canary/
 wait for CI, then merge. On later wakes, run `$H canary --check`. If it exits 1 (failed, or not merged
 2 hours after the request), post its one attention line to the person once, instead of one message per
 stuck item. The digest shows the canary's stage times, and leads with it when a stage is slow or failed.
+## Once a day: the stand-in audit
+
+The stand-in's own decisions never test it, so ask the person to check a few. After the canary, run
+`$H audit`. If it prints a `card`, post it with `request_decision`: up to 3 stand-in decisions, where
+option 0 confirms them all and option N reverses pick N. When the tap comes back, run
+`$H audit --answer <option index>`. That writes the person's decisions into the log, which calibration
+and the ladder learn from. A reversal only demotes the class; it never undoes a merge. `$H doctor` warns
+when a class goes more than 20 stand-in decisions without one of these checks.
+
 ## Weekly: the retro
 
 When `$H retro --due` exits 0 (7 days, or 20 merges, since the last retro), run `$H retro`. It writes

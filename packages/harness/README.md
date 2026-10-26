@@ -68,6 +68,17 @@ The harness spec and the runtime that drives it.
 - `src/expect-check.js`: `harness check <item> --init` writes `checks/<item>.md` from the request's `expect`, one
   line each, to mark `[met]`, `[unmet]` or `[unclear]` with evidence. `harness send` refuses a stand-in approve
   on an accept gate until every line is met, and the item page shows the check beside the ask.
+- `src/sim.js`: `npm run sim` drives 12 synthetic items (every tier, a failed run, failed checks, a block,
+  a person's revise) through a scratch store at WIP 3 and at WIP 12 with a scripted host. It checks the
+  WIP limit, the queue, the outbox, doctor, the page size and an apply at 500 events, and saves the
+  busiest mission control to `--out`.
+- `src/audit.js`: `harness audit` picks up to 3 decisions the stand-in made alone (untested classes, low
+  confidence and old ones first) for one daily card; `--answer N` logs the tap as the person's decisions
+  (0 confirms all, N reverses pick N), so calibration and the ladder get tested decisions. Doctor warns
+  when a class goes over 20 stand-in decisions unchecked.
+- `src/github.js`: `harness from-github FILE` turns one PR activity event (a wake's `<event source="github">`
+  text or `{kind, data}` JSON) into the item event it means: a finished check suite is `CHECKS_PASSED`, a
+  failed check `CHECKS_FAILED`, a merged PR `MERGED`. It finds the item from the `pr` URLs on its events.
 - `src/card.js`: `harness card <effect-id>` turns a `postDecisionCard` effect into `request_decision`
   arguments (approve, revise or drop, with the stand-in's lean recommended) plus the decision's `address`
   and `choices`; a tap on option i is `PERSON_DECIDED {choice: choices[i]}` with the card's id as `--id`.
