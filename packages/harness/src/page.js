@@ -1,9 +1,15 @@
 // Mission control: one page that answers, at a glance, what needs the person, what is in flight and
 // where each item stands, and what the harness has asked the host to do. Rebuilt from the store on
 // every change; no scripts are needed to read it.
+import { lastMoved } from './stalled.js';
+
 export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 export const time = (iso) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');
+const ago = (now, then) => {
+  const m = Math.max(0, Math.round((Date.parse(now) - Date.parse(then)) / 60000));
+  return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
+};
 export const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`);
 
 // The work item's path, in order; gate and awaiting states fold into the stage they guard.
@@ -69,7 +75,7 @@ export function renderPage(st, { events = [], pending = [], title = 'Mission con
   const rows = (items) =>
     items
       .map(
-        (i) => `<tr><td><b>${itemLinks ? `<a href="${esc(itemHref(i.id))}">${esc(i.id)}</a>` : esc(i.id)}</b>${i.title ? `<br><span class="m">${esc(i.title)}</span>` : ''}</td><td class="m">${esc(i.project ?? '')}</td><td class="m">${esc(i.tier)}</td><td>${track(i)}<span class="m">${esc(leaf(i.state))}</span></td><td class="m">${esc(i.runs ?? 0)}${i.retries ? ` (${i.retries} retry)` : ''}</td><td>${i.url ? `<a href="${esc(i.url)}">link</a>` : ''}</td></tr>`
+        (i) => `<tr><td><b>${itemLinks ? `<a href="${esc(itemHref(i.id))}">${esc(i.id)}</a>` : esc(i.id)}</b>${i.title ? `<br><span class="m">${esc(i.title)}</span>` : ''}</td><td class="m">${esc(i.project ?? '')}</td><td class="m">${esc(i.tier)}</td><td>${track(i)}<span class="m">${esc(leaf(i.state))}</span></td><td class="m">${esc(i.runs ?? 0)}${i.retries ? ` (${i.retries} retry)` : ''}${!i.done && lastMoved(events, i.id) ? `<br>moved ${esc(ago(st.updatedAt, lastMoved(events, i.id)))} ago` : ''}</td><td>${i.url ? `<a href="${esc(i.url)}">link</a>` : ''}</td></tr>`
       )
       .join('');
   const head = '<thead><tr><th>Item</th><th>Project</th><th>Tier</th><th>Stage</th><th>Runs</th><th></th></tr></thead>';

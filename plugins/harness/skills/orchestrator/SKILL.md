@@ -84,6 +84,11 @@ again in every shell command, since variables do not carry over.
    `$H usage --samples .ledger/usage.json`. Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
 
+7. **Schedule the check-in.** While any item is in flight, end the wake with a `send_later` check-in:
+   60 minutes, doubling each time nothing changed, at most 4 in a row. On the check-in, run
+   `$H stalled --after 60m`; for each item it lists, read its worker thread and turn what you find into
+   events, or send `BLOCK` with the reason.
+
 ## Rules
 
 - Budget first: if `status` shows the scheduler `halted`, start nothing; if `draining`, only finish

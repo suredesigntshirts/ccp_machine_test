@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -14,6 +14,7 @@ const HELP = `harness <command> [options]
                                  --id makes the send idempotent. Prints the effects it queued.
   usage [--samples FILE]         feed saved usage samples (ledger usage, default .ledger/usage.json)
                                  to the budget actor; a stop or soft limit reaches the scheduler
+  stalled [--after 60m]          list in-flight items with no event for longer than --after, oldest first
   status                         print the summary as JSON
   effects                        print effects the host has not acknowledged
   ack <effect-id>... [--outcome done|failed] [--note TEXT]
@@ -49,7 +50,8 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     title: { type: 'string', default: 'Mission control' },
     standalone: { type: 'boolean', default: false },
     day: { type: 'string' },
-    url: { type: 'string' }
+    url: { type: 'string' },
+    after: { type: 'string', default: '60m' }
   }
 });
 const store = openStore(o.dir);
@@ -71,6 +73,9 @@ try {
       print({ budget: st.budget, scheduler: st.state.scheduler });
       break;
     }
+    case 'stalled':
+      print(stalled(status(store), store.events(), { afterMs: parseAfter(o.after) }));
+      break;
     case 'status':
       print(status(store));
       break;
