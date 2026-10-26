@@ -53,8 +53,10 @@ next actions. Keep anything the machines do not know (a card posted by hand, a c
    | Something blocks the item | `BLOCK`, later `UNBLOCKED` | `item:<id>` | |
    | The person drops the item | `CANCEL` | `item:<id>` | the person's message id |
 
-   For a GitHub PR event, save the `<event source="github" ...>` text to a file and run
-   `$H from-github <file>` instead of writing the CI or merge row yourself. It finds the item from the
+   For a GitHub PR event, save the whole `<wake ...>` text to a file and run `$H from-github <file>`
+   as the wake arrives, before other work, instead of writing the CI or merge row yourself. It stamps
+   the wake's current-time on the event as `observedAt`, so the retro counts CI's time apart from the
+   host's delay (a result fed at merge time would otherwise count as CI). It finds the item from the
    `pr` on its events, sends `CHECKS_PASSED`, `CHECKS_FAILED` or `MERGED` with the ids above (`ci-<sha7>`,
    `merge-pr<N>`), acks the merge effect, and reports `stale` when the item is not waiting for it.
 
