@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemRecords, budgetEvents } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemRecords, budgetEvents, logPrecedents, readDecisionLog, classStats, renderDecisionLog } from '../src/index.js';
 
 const fresh = (input) => {
   const store = openStore(mkdtempSync(join(tmpdir(), 'harness-')));
@@ -114,4 +114,24 @@ test('an item page shows what was asked, how it ended, who decided and what the 
   assert.match(html, /stand-in/);
   assert.ok(!html.includes('other'));
   assert.match(renderPage(status(store), { itemLinks: true }), /href="items\/p\.html"/);
+});
+
+test('logPrecedent effects become the decision log once, and the page shows agreement per class', () => {
+  const store = fresh();
+  apply(store, { type: 'REQUEST_RECEIVED', request: { id: 'p', tier: 1 } });
+  apply(store, { type: 'RUN_SUCCEEDED' }, { to: 'item:p' });
+  apply(store, { type: 'STAND_IN_ANSWERED', answer: { ...sure, reason: '<why>' } }, { to: 'item:p/decision:p:plan:1' });
+  assert.deepEqual(logPrecedents(store), { added: 1, acked: 1 });
+  assert.deepEqual(logPrecedents(store), { added: 0, acked: 0 });
+  const rows = readDecisionLog(store);
+  assert.equal(rows[0].item, 'p');
+  assert.equal(rows[0].decidedBy, 'stand-in');
+  assert.ok(!store.pending().some((e) => e.name === 'logPrecedent'));
+  const [plan] = classStats(rows);
+  assert.deepEqual([plan.decisions, plan.agreement, plan.earnedAct], [1, 1, false]);
+  const many = Array.from({ length: 20 }, () => ({ ...rows[0] }));
+  assert.equal(classStats(many)[0].earnedAct, true);
+  const html = renderDecisionLog(rows);
+  assert.match(html, /recommend/);
+  assert.match(html, /&lt;why&gt;/);
 });

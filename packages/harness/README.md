@@ -16,6 +16,10 @@ The harness spec and the runtime that drives it.
   the request (`request.expect` if given, else its title), how it ended (state, CI, acceptance, PR),
   every gate with who decided and the stand-in's reason, each effect with the host's ack note, and the
   item's events. The host can put the PR link on any event it sends for the item (`"pr": "<url>"`).
+- `src/decision-log.js`: `harness decisions` appends each `logPrecedent` effect to `decisions.jsonl` in
+  the store (once per effect, backfilling acknowledged ones) and acks it. `decisions.html` shows, per
+  decision class, how often the stand-in's lean matched the final choice and whether the class has
+  earned `act` (20 decisions at 90% agreement, `EARN_ACT`), then every decision.
 
 ## Use
 

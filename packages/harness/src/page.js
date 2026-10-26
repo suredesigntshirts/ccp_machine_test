@@ -75,7 +75,7 @@ export function renderPage(st, { events = [], pending = [], title = 'Mission con
   const head = '<thead><tr><th>Item</th><th>Project</th><th>Tier</th><th>Stage</th><th>Runs</th><th></th></tr></thead>';
 
   const body = `<div class="wrap">
-<header><span class="eyebrow">Harness · v${esc(st.version)} · updated ${esc(time(st.updatedAt))} UTC</span><h1>${esc(title)}</h1></header>
+<header><span class="eyebrow">Harness · v${esc(st.version)} · updated ${esc(time(st.updatedAt))} UTC</span><h1>${esc(title)}</h1>${itemLinks ? '<a class="m" href="decisions.html">Decision log</a>' : ''}</header>
 <div class="tiles">
   <div class="tile${asks.length ? ' ask' : ''}"><span class="eyebrow">Needs you</span><b>${asks.length}</b><small>${asks.length ? 'decisions waiting below' : 'nothing to decide'}</small></div>
   <div class="tile"><span class="eyebrow">In flight</span><b>${st.context.inFlight.length} / ${st.context.wipLimit}</b><small>${st.context.queued.length} queued</small></div>
