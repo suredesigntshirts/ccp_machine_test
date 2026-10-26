@@ -107,8 +107,10 @@ next actions. Keep anything the machines do not know (a card posted by hand, a c
    Artifact (https://claude.ai/artifact/KG3nqfYx8JY9PXeWJowbSS). Run it from the same folder as the usage
    step below, so both use one `.ledger/`.
 
-6. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
-   `kinds: ["rate_limit_event"]`, `limit: 100`), save it, then `ledger usage <file>` and
+6. **Feed usage.** The windows are the account's, so a reading from any session in the project counts.
+   For each id `ledger usage-sources` prints (this session first, then every session filed in the Library),
+   fetch its newest `rate_limit_event` (`list_events` with `kinds: ["rate_limit_event"]`, `limit: 100`) until
+   one has a reading newer than 2 hours; save each, then `ledger usage <files...>` (the newest wins) and
    `$H usage --samples .ledger/usage.json`. When the page has no reading, run `ledger estimate` first: it adds
    a sample estimated from the cost of the turns filed since the last reading (marked estimated on mission
    control), and a real reading replaces it. It also sends a `TICK`: with no reading newer than 2 hours the budget drains,
