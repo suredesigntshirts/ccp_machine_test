@@ -57,8 +57,10 @@ next actions. Keep anything the machines do not know (a card posted by hand, a c
    as the wake arrives, before other work, instead of writing the CI or merge row yourself. It stamps
    the wake's current-time on the event as `observedAt`, so the retro counts CI's time apart from the
    host's delay (a result fed at merge time would otherwise count as CI). It finds the item from the
-   `pr` on its events, sends `CHECKS_PASSED`, `CHECKS_FAILED` or `MERGED` with the ids above (`ci-<sha7>`,
-   `merge-pr<N>`), acks the merge effect, and reports `stale` when the item is not waiting for it.
+   `pr` on its events, sends `CHECKS_PASSED`, `CHECKS_FAILED` or `MERGED` with ids `ci-<sha7>-passed`,
+   `ci-<sha7>-failed` and `merge-pr<N>`, acks the merge effect, and reports `stale` when the item is not
+   waiting for it. When you re-run a failed job instead of pushing a fix, send the build's
+   `RUN_SUCCEEDED` again (id `run-pr<N>-rerun`, with its `pr`) so the item verifies the same commit again.
 
    The verify step has no `RUN_SUCCEEDED`: the item ignores it while verifying, and only the CI result
    moves it on. Put `"pr": "<url>"` on the build's `RUN_SUCCEEDED`, the CI event and `MERGED`, so the
