@@ -112,7 +112,9 @@ next actions. Keep anything the machines do not know (a card posted by hand, a c
    step below, so both use one `.ledger/`.
 
 6. **Feed usage.** The windows are the account's, so a reading from any session in the project counts.
-   For each id `ledger usage-sources` prints (this session first, then every session filed in the Library),
+   For each id `ledger usage-sources --notes $HARNESS_DIR/handoff-notes.md` prints (this session first, then
+   every session filed in the Library, then each `usage source: session_…` line in the notes; add one for a
+   peer thread whose id you learn),
    fetch its newest `rate_limit_event` (`list_events` with `kinds: ["rate_limit_event"]`, `limit: 100`) until
    one has a reading newer than 2 hours; save each, then `ledger usage <files...>` (the newest wins) and
    `$H usage --samples .ledger/usage.json`. When the page has no reading, run `ledger estimate` first: it adds
