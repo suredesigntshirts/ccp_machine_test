@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openStore, init, apply, ack, status, renderPage, budgetEvents } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemRecords, budgetEvents } from '../src/index.js';
 
 const fresh = (input) => {
   const store = openStore(mkdtempSync(join(tmpdir(), 'harness-')));
@@ -91,4 +91,27 @@ test('usage samples reach the scheduler: a spent slice halts starts, and feeding
   assert.equal(st.budget.mode, 'paused');
   assert.equal(st.state.scheduler, 'halted');
   assert.equal(store.events().length, 2);
+});
+
+test('an item page shows what was asked, how it ended, who decided and what the host did', () => {
+  const store = fresh();
+  const { effects } = apply(store, { type: 'REQUEST_RECEIVED', request: { id: 'p', tier: 1, title: 'Ship it', expect: 'A <b> page' } }, { id: 'req-p' });
+  ack(store, effects.map((e) => e.id), { note: 'plan written' });
+  apply(store, { type: 'RUN_SUCCEEDED' }, { to: 'item:p' });
+  apply(store, { type: 'STAND_IN_ANSWERED', answer: { ...sure, reason: 'small' } }, { to: 'item:p/decision:p:plan:1' });
+  apply(store, { type: 'RUN_SUCCEEDED', pr: 'https://github.com/o/r/pull/9' }, { to: 'item:p' });
+  apply(store, { type: 'CHECKS_PASSED' }, { to: 'item:p' });
+  apply(store, { type: 'REQUEST_RECEIVED', request: { id: 'other', tier: 0 } });
+  const item = status(store).items.find((i) => i.id === 'p');
+  const records = itemRecords('p', { events: store.events(), outbox: store.outbox(), acks: store.acks() });
+  assert.ok(records.events.every((e) => e.to.startsWith('item:p') || e.event.request?.id === 'p'));
+  const html = renderItemPage(item, { events: store.events(), outbox: store.outbox(), acks: store.acks() });
+  assert.match(html, /^<!doctype html>/);
+  assert.match(html, /A &lt;b&gt; page/);
+  assert.match(html, /CI passed/);
+  assert.match(html, /pull\/9/);
+  assert.match(html, /plan written/);
+  assert.match(html, /stand-in/);
+  assert.ok(!html.includes('other'));
+  assert.match(renderPage(status(store), { itemLinks: true }), /href="items\/p\.html"/);
 });

@@ -11,7 +11,11 @@ The harness spec and the runtime that drives it.
 - `src/store.js`: a folder per harness. `state.json` is replaced whole under a lock with
   compare-and-set on its version; `events.jsonl`, `outbox.jsonl` and `acks.jsonl` are append-only.
 - `src/page.js`: mission control, one page with what needs the person, what is in flight, the host's
-  to-do and recent events.
+  to-do and recent events. Each item row links to its item page.
+- `src/item-page.js`: one page per item (`items/<id>.html`) that answers "did it do what I expected":
+  the request (`request.expect` if given, else its title), how it ended (state, CI, acceptance, PR),
+  every gate with who decided and the stand-in's reason, each effect with the host's ack note, and the
+  item's events. The host can put the PR link on any event it sends for the item (`"pr": "<url>"`).
 
 ## Use
 

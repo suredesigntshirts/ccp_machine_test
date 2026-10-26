@@ -2,9 +2,9 @@
 // harness: drive a stored harness one event at a time. Every command reads and writes the store
 // folder (--dir, default .harness), so each session wake runs a command and exits.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, budgetEvents } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents } from '../src/index.js';
 
 const HELP = `harness <command> [options]
 
@@ -19,7 +19,9 @@ const HELP = `harness <command> [options]
   effects                        print effects the host has not acknowledged
   ack <effect-id>... [--outcome done|failed] [--note TEXT]
   page [--html FILE] [--title T] [--standalone]
-                                 render mission control (default .harness/mission-control.html)
+                                 render mission control (default .harness/mission-control.html) and
+                                 one page per item beside it (items/<id>.html), linked from its row;
+                                 publish those as the Artifact's supporting files
 
   --dir DIR                      store folder (default $HARNESS_DIR, else .harness); an orchestrator
                                  thread keeps it in the Library so the next thread can pick it up`;
@@ -72,8 +74,16 @@ try {
       if (!st) throw new Error(`no harness in ${o.dir}`);
       const file = o.html ?? `${o.dir}/mission-control.html`;
       mkdirSync(dirname(file), { recursive: true });
-      writeFileSync(file, renderPage(st, { events: store.events(), pending: store.pending(), title: o.title, standalone: o.standalone }));
-      console.log(`wrote ${file}`);
+      const events = store.events();
+      writeFileSync(file, renderPage(st, { events, pending: store.pending(), title: o.title, standalone: o.standalone, itemLinks: true }));
+      const records = { events, outbox: store.outbox(), acks: store.acks(), back: '../' };
+      const items = st.items.map((item) => {
+        const path = join(dirname(file), itemHref(item.id));
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, renderItemPage(item, records));
+        return itemHref(item.id);
+      });
+      print({ page: file, files: items });
       break;
     }
     default:
