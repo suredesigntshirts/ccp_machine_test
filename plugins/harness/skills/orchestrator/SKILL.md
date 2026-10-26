@@ -81,7 +81,8 @@ again in every shell command, since variables do not carry over.
 
 5. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
    `kinds: ["rate_limit_event"]`, `limit: 100`), save it, then `ledger usage <file>` and
-   `$H usage --samples .ledger/usage.json`. Stop starting work when the scheduler leaves `accepting`
+   `$H usage --samples .ledger/usage.json`. It also sends a `TICK`: with no reading newer than 2 hours the budget drains,
+   so fetch a fresh reading at least that often while work is in flight (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
 
 7. **Schedule the check-in.** While any item is in flight, end the wake with a `send_later` check-in:
