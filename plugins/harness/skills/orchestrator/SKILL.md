@@ -27,6 +27,10 @@ again in every shell command, since variables do not carry over.
 
 ## Every wake
 
+A new orchestrator thread reads `$HARNESS_DIR/handoff.md` first: the last thread's PRs, waiting cards and
+next actions. Keep anything the machines do not know (a card posted by hand, a convention) in
+`$HARNESS_DIR/handoff-notes.md`, which the note carries.
+
 0. **Check the store.** `$H doctor` (which also replays the event log) must print `"ok": true`. If a problem says "fix with harness repair",
    run `$H repair` (add `--rebuild` only when doctor says so, then resend the event it names) and run doctor
    again. For any other problem, change nothing: report it in the thread and stop.
@@ -109,7 +113,9 @@ again in every shell command, since variables do not carry over.
    so fetch a fresh reading at least that often while work is in flight (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
 
-7. **Schedule the check-in.** While any item is in flight, end the wake with a `send_later` check-in:
+7. **Write the hand-off.** `$H handoff` rewrites `handoff.md`, so the next thread can pick up from here.
+
+8. **Schedule the check-in.** While any item is in flight, end the wake with a `send_later` check-in:
    60 minutes, doubling each time nothing changed, at most 4 in a row. On the check-in, run
    `$H stalled --after 60m`; for each item it lists, read its worker thread and turn what you find into
    events, or send `BLOCK` with the reason.
