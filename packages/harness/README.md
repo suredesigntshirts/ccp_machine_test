@@ -48,6 +48,20 @@ The harness spec and the runtime that drives it.
   `events.jsonl` (a crash between the two writes) from the log, so the host can resend the lost event.
   `test/chaos.test.js` injects each fault: a crash, a stale lock, racing writer processes, duplicates,
   torn lines and a slow mount.
+- `src/canary.js`: `harness canary` files the day's tier-0 canary item (bump `canary/last.txt`, PR, CI,
+  merge) once per UTC day. `harness canary --check` times each stage and exits 1 with one attention line
+  when the canary failed or is not merged 2 hours after the request. The digest leads with the canary when
+  a stage is slow (triage over 15m, build over 30m, verify over 30m, merge over 15m) or failed.
+- `src/calibration.js`: `harness calibration [class]` asks, per decision class, whether the person can trust the
+  stand-in there. It counts only the person's decisions made against a stand-in lean (agreement and
+  reversals), gives a confidence-versus-outcome table with the Brier score, and shows time on each ladder rung.
+  The verdict is one of: not yet (under 10 tested), overconfident (stays at recommend), calibrated (the
+  threshold could drop), or partly. The decision log page shows the same answer per class.
+- `src/retro.js`: `harness retro [--day D] [--out DIR] [--due]` compares the items finished in the last 7 days with
+  the 7 before: touches, cost, median wall time, retries, stalls over 60m and reversals. It lists what got
+  better and worse, and names the top 3 bottlenecks: where finished items' time went, by what each wait ended
+  with (worker runs, stand-in, the person, CI, merging, blocked). Each comes as an issue draft with an expected
+  change. It writes `<DIR>/<day>.md` and `.json`, and the next retro checks the last one's expectations.
 - `src/card.js`: `harness card <effect-id>` turns a `postDecisionCard` effect into `request_decision`
   arguments (approve, revise or drop, with the stand-in's lean recommended) plus the decision's `address`
   and `choices`; a tap on option i is `PERSON_DECIDED {choice: choices[i]}` with the card's id as `--id`.

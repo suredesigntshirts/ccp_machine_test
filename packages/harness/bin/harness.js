@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair , writeRetro, retroDue, calibration, canaryRequest, canaryReport } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -22,6 +22,16 @@ const HELP = `harness <command> [options]
   decisions                      append logPrecedent effects to decisions.jsonl in the store and ack them
   standin <class>                the stand-in's autonomy for a decision class (shadow, recommend or act),
                                  worked out from decisions.jsonl; use it as STAND_IN_ANSWERED's autonomy
+  canary [--day D] [--check]     file the day's tier-0 canary item once (canary-<day>); with --check, report
+                                 each stage's time and exit 1 with one attention line if it failed or is
+                                 not merged 2 hours after the request
+  calibration [class]            per decision class: agreement, reversals, confidence vs outcome (with the
+                                 Brier score), time on each rung, and whether to trust the stand-in there
+  retro [--day D] [--out DIR] [--due]
+                                 review the last 7 days against the 7 before: better, worse, the top 3
+                                 bottlenecks as issue drafts, and the last retro's expectations; writes
+                                 <DIR>/<day>.md and .json (default the store's ../../reviews); --due exits 0
+                                 when a retro is due (7 days or 20 merges since the last)
   digest [--day YYYY-MM-DD]      send DIGEST_DUE once per UTC day, write digests/<day>.md in the store
                                  and ack publishDigest; the host posts the text
   replay                         rebuild the harness from events.jsonl on a scratch copy and compare state
@@ -61,6 +71,9 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     after: { type: 'string', default: '60m' },
     sessions: { type: 'string' },
     rebuild: { type: 'boolean', default: false },
+    check: { type: 'boolean', default: false },
+    due: { type: 'boolean', default: false },
+    out: { type: 'string' },
     now: { type: 'string' }
   }
 });
@@ -118,10 +131,42 @@ try {
     case 'decisions':
       print(logPrecedents(store));
       break;
+    case 'calibration':
+      print(calibration(readDecisionLog(store), { decisionClass: args[0] }));
+      break;
     case 'standin':
       if (!args[0]) throw new Error('standin needs a decision class, such as plan or accept');
       print(ladder(readDecisionLog(store), args[0]));
       break;
+    case 'canary': {
+      const day = o.day ?? new Date().toISOString().slice(0, 10);
+      if (!o.check) {
+        const r = apply(store, canaryRequest(day), { id: `req-canary-${day}` });
+        print({ item: `canary-${day}`, filed: !r.duplicate, effects: r.effects.map((e) => e.name) });
+        break;
+      }
+      const report = canaryReport(store.events(), day);
+      print(report);
+      if (['failed', 'late'].includes(report.status)) {
+        console.error(`attention: ${report.line}`);
+        process.exitCode = 1;
+      }
+      break;
+    }
+    case 'retro': {
+      const dir = o.out ?? join(o.dir, '..', '..', 'reviews');
+      if (o.due) {
+        const d = retroDue(store, dir, o.day);
+        print(d);
+        if (!d.due) process.exitCode = 1;
+        break;
+      }
+      const { file, record, text } = writeRetro(store, dir, o.day ? { day: o.day } : {});
+      console.log(text);
+      console.error(`wrote ${file}; file each bottleneck as a harness-backlog issue`);
+      print(record.bottlenecks.map(({ title, expected }) => ({ title, expected })));
+      break;
+    }
     case 'digest': {
       const { file, acked, text } = writeDigest(store, o.day ? { day: o.day } : {});
       console.log(text);
