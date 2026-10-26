@@ -129,7 +129,7 @@ test('logPrecedent effects become the decision log once, and the page shows agre
   assert.ok(!store.pending().some((e) => e.name === 'logPrecedent'));
   const [plan] = classStats(rows);
   assert.deepEqual([plan.decisions, plan.agreement, plan.earnedAct], [1, null, false]);
-  const many = Array.from({ length: 20 }, () => ({ ...rows[0] }));
+  const many = Array.from({ length: 20 }, () => ({ ...rows[0], decidedBy: 'person' }));
   assert.equal(classStats(many)[0].earnedAct, true);
   const html = renderDecisionLog(rows);
   assert.match(html, /recommend/);
