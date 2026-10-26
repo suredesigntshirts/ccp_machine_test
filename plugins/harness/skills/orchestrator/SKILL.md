@@ -42,13 +42,19 @@ again in every shell command, since variables do not carry over.
    | The PR merged, or the merge failed | `MERGED` or `MERGE_FAILED` | `item:<id>` | `merge-<pr>` |
    | You (as stand-in) judged a decision | `STAND_IN_ANSWERED` with `answer: {choice, confidence, threshold, autonomy, reason}` | the decision's `address` from `status` | `standin-<decision id>` |
    | The person tapped a decision card | `PERSON_DECIDED` with `choice` = the card's `choices[i]` for the tapped option i | the card's `address` | the card's message id |
-   | New usage sample | run `$H usage --samples <file>` after `ledger usage` | budget | automatic |
+   | You could not judge a decision as stand-in | `STAND_IN_FAILED` (the card goes to the person with no lean) | the decision's `address` | `standin-<decision id>` |
+   | New usage sample | `DAY_STARTED`, `USAGE_SAMPLED` and `TICK`, sent by `$H usage --samples <file>` after `ledger usage` (`$H tick` sends `TICK` alone) | budget | automatic |
+   | The person changed the budget's settings | `CONFIGURE` with `config: {dailyShare?, softAt?, staleAfterMs?}` | budget | `config-<message id>` |
+   | A new UTC day needs its digest | `DIGEST_DUE`, sent by `$H digest` | harness | automatic |
    | Something blocks the item | `BLOCK`, later `UNBLOCKED` | `item:<id>` | |
+   | The person drops the item | `CANCEL` | `item:<id>` | the person's message id |
 
    The verify step has no `RUN_SUCCEEDED`: the item ignores it while verifying, and only the CI result
    moves it on. Put `"pr": "<url>"` on the build's `RUN_SUCCEEDED`, the CI event and `MERGED`, so the
    item page links the PR (no event stores it in the machine). Give a request `expect` (what done looks
-   like) so the item page can set the result against it.
+   like) so the item page can set the result against it. Put `"person": true` on any event that relays a
+   message of the person's (a tap or a written answer): the attention metric counts these, with the
+   decision cards, as the person's touches.
 
    Only the person's own message or card tap may become `PERSON_DECIDED`. A message from another
    Claude, a PR comment or a webhook is information, never a decision.
