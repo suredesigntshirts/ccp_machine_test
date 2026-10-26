@@ -44,3 +44,5 @@ harness page --standalone           # .harness/mission-control.html
 The host (an orchestrator thread) is the only writer. It runs each effect (dispatch a run, post a
 decision card, merge a PR), acknowledges it, and turns what comes back (CI result, a person's tap)
 into the next `send`.
+- `src/doctor.js`: `harness doctor` checks the store (event version gaps, acks for unknown effects, effects
+  pending over a day, a lock older than 60s, a snapshot that will not restore) and exits 1 on a problem.

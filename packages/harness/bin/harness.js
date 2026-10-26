@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor } from '../src/index.js';
 
 const HELP = `harness <command> [options]
 
@@ -23,6 +23,8 @@ const HELP = `harness <command> [options]
                                  worked out from decisions.jsonl; use it as STAND_IN_ANSWERED's autonomy
   digest [--day YYYY-MM-DD]      send DIGEST_DUE once per UTC day, write digests/<day>.md in the store
                                  and ack publishDigest; the host posts the text
+  doctor                         check the store (version gaps, unknown acks, effects pending over a day,
+                                 a stale lock, a snapshot that will not restore); exits 1 on a problem
   page [--html FILE] [--title T] [--standalone]
                                  render mission control (default .harness/mission-control.html) and
                                  one page per item beside it (items/<id>.html), linked from its row,
@@ -87,6 +89,12 @@ try {
       const { file, acked, text } = writeDigest(store, o.day ? { day: o.day } : {});
       console.log(text);
       console.error(`wrote ${file}, acked ${acked}`);
+      break;
+    }
+    case 'doctor': {
+      const report = doctor(store);
+      print(report);
+      if (!report.ok) process.exitCode = 1;
       break;
     }
     case 'page': {
