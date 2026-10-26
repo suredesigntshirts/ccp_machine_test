@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair , writeRetro, retroDue, calibration, intakeRows } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair , writeRetro, retroDue, calibration, canaryRequest, canaryReport, intakeRows } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -25,6 +25,9 @@ const HELP = `harness <command> [options]
   intake FILE                    file each new request-box row in FILE (an ArtifactData list result of the
                                  mission control \`requests\` collection) as REQUEST_RECEIVED req-<row id>,
                                  and print the row updates to write back (status taken, item, href)
+  canary [--day D] [--check]     file the day's tier-0 canary item once (canary-<day>); with --check, report
+                                 each stage's time and exit 1 with one attention line if it failed or is
+                                 not merged 2 hours after the request
   calibration [class]            per decision class: agreement, reversals, confidence vs outcome (with the
                                  Brier score), time on each rung, and whether to trust the stand-in there
   retro [--day D] [--out DIR] [--due]
@@ -71,6 +74,7 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     after: { type: 'string', default: '60m' },
     sessions: { type: 'string' },
     rebuild: { type: 'boolean', default: false },
+    check: { type: 'boolean', default: false },
     due: { type: 'boolean', default: false },
     'request-box': { type: 'boolean', default: false },
     out: { type: 'string' },
@@ -141,6 +145,21 @@ try {
     case 'intake': {
       if (!args[0]) throw new Error('intake needs a file holding the requests rows');
       print(intakeRows(store, JSON.parse(readFileSync(args[0], 'utf8'))));
+      break;
+    }
+    case 'canary': {
+      const day = o.day ?? new Date().toISOString().slice(0, 10);
+      if (!o.check) {
+        const r = apply(store, canaryRequest(day), { id: `req-canary-${day}` });
+        print({ item: `canary-${day}`, filed: !r.duplicate, effects: r.effects.map((e) => e.name) });
+        break;
+      }
+      const report = canaryReport(store.events(), day);
+      print(report);
+      if (['failed', 'late'].includes(report.status)) {
+        console.error(`attention: ${report.line}`);
+        process.exitCode = 1;
+      }
       break;
     }
     case 'retro': {
