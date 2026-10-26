@@ -22,6 +22,20 @@ function restore(state, input, sink) {
   return createActor(harness, { systemId: 'harness', ...(state ? { snapshot: state.snapshot } : { input }) });
 }
 
+/** Restore the stored snapshot without applying anything; returns the error if it cannot start. */
+export function tryRestore(store) {
+  const state = store.read();
+  if (!state) return { error: 'no state.json' };
+  try {
+    const actor = restore(state, null, () => {}).start();
+    const snap = actor.getSnapshot();
+    actor.stop();
+    return snap.status === 'error' ? { error: String(snap.error) } : {};
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 export function init(store, input = {}, now = new Date().toISOString()) {
   return store.withLock(() => {
     if (store.read()) throw new Error(`a harness already exists in ${store.dir}`);
@@ -110,7 +124,7 @@ export function status(store) {
     state: s.value,
     context: s.context,
     needsPerson: s.value.attention === 'needsPerson',
-    budget: budget ? { mode: valueText(budget.value), ...pick(budget.context, ['sevenDay', 'fiveHour', 'dayStartSevenDay', 'dailyShare', 'softAt']) } : null,
+    budget: budget ? { mode: valueText(budget.value), ...pick(budget.context, ['sevenDay', 'fiveHour', 'dayStartSevenDay', 'dailyShare', 'softAt', 'sampledAt']) } : null,
     items
   };
 }

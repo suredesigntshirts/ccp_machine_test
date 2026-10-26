@@ -27,6 +27,9 @@ again in every shell command, since variables do not carry over.
 
 ## Every wake
 
+0. **Check the store.** `$H doctor` must print `"ok": true`. If it lists problems, change nothing:
+   report them in the thread and stop.
+
 1. **Turn what happened into events.** One `send` per fact, with an `--id` taken from the fact so a
    repeated wake changes nothing:
 
@@ -83,7 +86,8 @@ again in every shell command, since variables do not carry over.
 
 6. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
    `kinds: ["rate_limit_event"]`, `limit: 100`), save it, then `ledger usage <file>` and
-   `$H usage --samples .ledger/usage.json`. Stop starting work when the scheduler leaves `accepting`
+   `$H usage --samples .ledger/usage.json`. It also sends a `TICK`: with no reading newer than 2 hours the budget drains,
+   so fetch a fresh reading at least that often while work is in flight (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
 
 ## Rules

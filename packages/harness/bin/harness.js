@@ -4,8 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, cardFor } from '../src/index.js';
-
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -15,6 +14,7 @@ const HELP = `harness <command> [options]
                                  --id makes the send idempotent. Prints the effects it queued.
   usage [--samples FILE]         feed saved usage samples (ledger usage, default .ledger/usage.json)
                                  to the budget actor; a stop or soft limit reaches the scheduler
+  tick [--now ISO]               tell the budget the time, so a reading older than 2 hours drains it
   status                         print the summary as JSON
   effects                        print effects the host has not acknowledged
   ack <effect-id>... [--outcome done|failed] [--note TEXT]
@@ -23,6 +23,8 @@ const HELP = `harness <command> [options]
                                  worked out from decisions.jsonl; use it as STAND_IN_ANSWERED's autonomy
   digest [--day YYYY-MM-DD]      send DIGEST_DUE once per UTC day, write digests/<day>.md in the store
                                  and ack publishDigest; the host posts the text
+  doctor                         check the store (version gaps, unknown acks, effects pending over a day,
+                                 a stale lock, a snapshot that will not restore); exits 1 on a problem
   card <effect-id> [--url U]     print request_decision arguments for a postDecisionCard effect; a tap on
                                  option i is PERSON_DECIDED {choice: choices[i]} to address, --id <card id>
   page [--html FILE] [--title T] [--standalone]
@@ -49,10 +51,12 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     standalone: { type: 'boolean', default: false },
     day: { type: 'string' },
     url: { type: 'string' },
-    sessions: { type: 'string' }
+    sessions: { type: 'string' },
+    now: { type: 'string' }
   }
 });
 const store = openStore(o.dir);
+const tick = (now) => apply(store, { type: 'TICK', now }, { to: 'budget', id: `tick-${now.slice(0, 16)}` });
 // Filed session ledgers, by id, for the item pages' turns (missing folder: none).
 const readSessions = (dir = '/mnt/project-files/harness/ledger/sessions') => {
   try {
@@ -81,10 +85,15 @@ try {
     case 'usage': {
       const samples = JSON.parse(readFileSync(o.samples, 'utf8'));
       for (const e of budgetEvents(samples)) apply(store, e.event, { to: e.to, id: e.id });
+      tick(new Date().toISOString());
       const st = status(store);
       print({ budget: st.budget, scheduler: st.state.scheduler });
       break;
     }
+    case 'tick':
+      tick(o.now ?? new Date().toISOString());
+      print(status(store).budget);
+      break;
     case 'status':
       print(status(store));
       break;
@@ -105,6 +114,12 @@ try {
       const { file, acked, text } = writeDigest(store, o.day ? { day: o.day } : {});
       console.log(text);
       console.error(`wrote ${file}, acked ${acked}`);
+      break;
+    }
+    case 'doctor': {
+      const report = doctor(store);
+      print(report);
+      if (!report.ok) process.exitCode = 1;
       break;
     }
     case 'card': {
