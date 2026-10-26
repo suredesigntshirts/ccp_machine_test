@@ -11,3 +11,4 @@ export { cardFor } from './card.js';
 export { runScenario, runScenarios, SCENARIOS_DIR } from './scenario.js';
 export { replay } from './replay.js';
 export { stalled, lastMoved, parseAfter } from './stalled.js';
+export { repair } from './repair.js';
