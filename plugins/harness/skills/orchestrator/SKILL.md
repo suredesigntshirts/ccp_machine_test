@@ -27,8 +27,9 @@ again in every shell command, since variables do not carry over.
 
 ## Every wake
 
-0. **Check the store.** `$H doctor` (which also replays the event log) must print `"ok": true`. If it lists problems, change nothing:
-   report them in the thread and stop.
+0. **Check the store.** `$H doctor` (which also replays the event log) must print `"ok": true`. If a problem says "fix with harness repair",
+   run `$H repair` (add `--rebuild` only when doctor says so, then resend the event it names) and run doctor
+   again. For any other problem, change nothing: report it in the thread and stop.
 
 1. **Turn what happened into events.** One `send` per fact, with an `--id` taken from the fact so a
    repeated wake changes nothing:
