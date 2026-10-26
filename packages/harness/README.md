@@ -69,6 +69,10 @@ The harness spec and the runtime that drives it.
   a person's revise) through a scratch store at WIP 3 and at WIP 12 with a scripted host. It checks the
   WIP limit, the queue, the outbox, doctor, the page size and an apply at 500 events, and saves the
   busiest mission control to `--out`.
+- `src/audit.js`: `harness audit` picks up to 3 decisions the stand-in made alone (untested classes, low
+  confidence and old ones first) for one daily card; `--answer N` logs the tap as the person's decisions
+  (0 confirms all, N reverses pick N), so calibration and the ladder get tested decisions. Doctor warns
+  when a class goes over 20 stand-in decisions unchecked.
 - `src/card.js`: `harness card <effect-id>` turns a `postDecisionCard` effect into `request_decision`
   arguments (approve, revise or drop, with the stand-in's lean recommended) plus the decision's `address`
   and `choices`; a tap on option i is `PERSON_DECIDED {choice: choices[i]}` with the card's id as `--id`.
