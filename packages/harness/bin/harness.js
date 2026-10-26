@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // harness: drive a stored harness one event at a time. Every command reads and writes the store
 // folder (--dir, default .harness), so each session wake runs a command and exits.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, replay } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -14,6 +14,7 @@ const HELP = `harness <command> [options]
                                  --id makes the send idempotent. Prints the effects it queued.
   usage [--samples FILE]         feed saved usage samples (ledger usage, default .ledger/usage.json)
                                  to the budget actor; a stop or soft limit reaches the scheduler
+  stalled [--after 60m]          list in-flight items with no event for longer than --after, oldest first
   tick [--now ISO]               tell the budget the time, so a reading older than 2 hours drains it
   status                         print the summary as JSON
   effects                        print effects the host has not acknowledged
@@ -53,11 +54,27 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     standalone: { type: 'boolean', default: false },
     day: { type: 'string' },
     url: { type: 'string' },
+    after: { type: 'string', default: '60m' },
+    sessions: { type: 'string' },
     now: { type: 'string' }
   }
 });
 const store = openStore(o.dir);
 const tick = (now) => apply(store, { type: 'TICK', now }, { to: 'budget', id: `tick-${now.slice(0, 16)}` });
+// Filed session ledgers, by id, for the item pages' turns (missing folder: none).
+const readSessions = (dir = '/mnt/project-files/harness/ledger/sessions') => {
+  try {
+    return Object.fromEntries(
+      readdirSync(dir)
+        .filter((f) => f.endsWith('.json') && !f.startsWith('.'))
+        .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')).session)
+        .filter(Boolean)
+        .map((sess) => [sess.sessionId, sess])
+    );
+  } catch {
+    return {};
+  }
+};
 const print = (x) => console.log(JSON.stringify(x, null, 2));
 
 try {
@@ -77,6 +94,9 @@ try {
       print({ budget: st.budget, scheduler: st.state.scheduler });
       break;
     }
+    case 'stalled':
+      print(stalled(status(store), store.events(), { afterMs: parseAfter(o.after) }));
+      break;
     case 'tick':
       tick(o.now ?? new Date().toISOString());
       print(status(store).budget);
@@ -128,7 +148,7 @@ try {
       mkdirSync(dirname(file), { recursive: true });
       const events = store.events();
       writeFileSync(file, renderPage(st, { events, pending: store.pending(), title: o.title, standalone: o.standalone, itemLinks: true }));
-      const records = { events, outbox: store.outbox(), acks: store.acks(), back: '../' };
+      const records = { events, outbox: store.outbox(), acks: store.acks(), back: '../', sessions: readSessions(o.sessions) };
       const items = st.items.map((item) => {
         const path = join(dirname(file), itemHref(item.id));
         mkdirSync(dirname(path), { recursive: true });
