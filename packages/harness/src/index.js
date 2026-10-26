@@ -15,3 +15,4 @@ export { repair } from './repair.js';
 export { attention, attentionText, touchesTrend } from './attention.js';
 export { calibration, calibrateClass, MIN_TESTED } from './calibration.js';
 export { retro, writeRetro, retroDue, lastRetro, renderRetro, windowMetrics, RETRO_EVERY } from './retro.js';
+export { intakeRows, requestFor, rowsOf, REQUESTS } from './intake.js';
