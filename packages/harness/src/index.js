@@ -9,3 +9,4 @@ export { renderDigest, writeDigest } from './digest.js';
 export { doctor } from './doctor.js';
 export { cardFor } from './card.js';
 export { stalled, lastMoved, parseAfter } from './stalled.js';
+export { attention, attentionText, touchesTrend } from './attention.js';
