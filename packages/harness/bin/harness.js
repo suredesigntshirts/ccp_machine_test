@@ -21,12 +21,13 @@ const HELP = `harness <command> [options]
   page [--html FILE] [--title T] [--standalone]
                                  render mission control (default .harness/mission-control.html)
 
-  --dir DIR                      store folder (default .harness)`;
+  --dir DIR                      store folder (default $HARNESS_DIR, else .harness); an orchestrator
+                                 thread keeps it in the Library so the next thread can pick it up`;
 
 const { values: o, positionals: [cmd, ...args] } = parseArgs({
   allowPositionals: true,
   options: {
-    dir: { type: 'string', default: '.harness' },
+    dir: { type: 'string', default: process.env.HARNESS_DIR ?? '.harness' },
     wip: { type: 'string' },
     to: { type: 'string' },
     id: { type: 'string' },
