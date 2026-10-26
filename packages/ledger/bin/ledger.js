@@ -4,12 +4,14 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
-import { buildLedger, findTranscripts, samplesFromText, mergeSamples, budgetStatus, renderReport } from '../src/index.js';
+import { buildLedger, findTranscripts, samplesFromText, mergeSamples, budgetStatus, renderReport, sessionsFromEvents } from '../src/index.js';
 
 const HELP = `ledger <command> [options]
 
   build [transcript.jsonl ...]   Build a ledger from session transcripts (default: every session under
                                  ~/.claude/projects). Writes --out (default .ledger/ledger.json).
+  events <file ...>              Add sessions from saved list_events output (result events) to --out's
+                                 ledger: for sessions whose transcripts are not in this container.
   usage <file ...>               Add usage-window samples from saved rate_limit_event JSON (list_events
                                  output, JSON or JSONL) to --samples (default .ledger/usage.json), then
                                  print today's budget status.
@@ -61,6 +63,15 @@ switch (cmd) {
     const turns = ledger.sessions.reduce((a, s) => a + s.turns.length, 0);
     const cost = ledger.sessions.reduce((a, s) => a + s.totals.cost, 0);
     console.log(`${ledger.sessions.length} sessions, ${turns} turns, $${cost.toFixed(2)} at list price -> ${o.out}`);
+    break;
+  }
+  case 'events': {
+    const ledger = readJson(o.out, { generatedAt: new Date().toISOString(), version: 1, sessions: [], usage: [] });
+    const added = sessionsFromEvents(args.map((f) => readFileSync(f, 'utf8')));
+    const ids = new Set(added.map((s) => s.sessionId));
+    ledger.sessions = [...ledger.sessions.filter((s) => !ids.has(s.sessionId)), ...added];
+    write(o.out, JSON.stringify(ledger, null, 1));
+    console.log(`${added.length} sessions from events (${added.reduce((a, s) => a + s.turns.length, 0)} turns) -> ${o.out}`);
     break;
   }
   case 'usage': {

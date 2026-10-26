@@ -48,7 +48,9 @@ function budgetTiles(budget) {
   <div class="tile"><span class="eyebrow">7-day window</span><b>${pct(l.sevenDay)}</b><div class="bar"><span style="width:${(l.sevenDay ?? 0) * 100}%"></span></div><small>resets ${esc(resets(l.sevenDayResetsAt))}</small></div>`;
 }
 
-function turnBlock(t, maxCost) {
+const anchor = (s, t) => `turn-${s.sessionId.replace(/[^A-Za-z0-9]/g, '').slice(0, 8)}-${t.index}`;
+
+function turnBlock(s, t, maxCost) {
   const tools = Object.entries(t.tools).sort((a, b) => b[1] - a[1]);
   const hot = maxCost > 0 && t.all.cost >= maxCost * 0.5 ? ' heat' : '';
   const requests = t.requests
@@ -61,7 +63,7 @@ function turnBlock(t, maxCost) {
       (a) => `<tr><td>${esc(a.description || a.agentId)}</td><td class="m">${esc(a.models.join(', '))}</td><td class="n">${a.requests}</td><td class="n">${a.tools}</td><td class="n">${dur(a.durationMs)}</td><td class="n">${tok(a.output)}</td><td class="n">${usd(a.cost)}</td></tr>`
     )
     .join('');
-  return `<details class="turn" id="turn-${t.index}">
+  return `<details class="turn" id="${anchor(s, t)}">
   <summary class="${hot}"><span class="m">#${t.index}</span><span class="m hide">${esc(time(t.start))}</span><span class="label" title="${esc(t.label)}">${esc(t.label)}</span><span class="n hide">${dur(t.durationMs)}</span><span class="n hide">${tok(t.all.output)} out</span><span class="n">${usd(t.all.cost)}</span></summary>
   <div class="inner">
     <div class="m">${esc(t.origin)} · ${esc(t.start)} → ${esc(time(t.end))} · ${t.own.requests} requests${t.subagents.length ? ` + ${t.subagents.length} subagents` : ''}${t.own.unpriced ? ` · ${t.own.unpriced} unpriced` : ''}</div>
@@ -80,7 +82,7 @@ function turnBlock(t, maxCost) {
 export function renderReport(ledger, opts = {}) {
   const title = opts.title ?? 'Session ledger';
   const sessions = ledger.sessions;
-  const all = sessions.flatMap((s) => s.turns);
+  const all = sessions.flatMap((s) => s.turns.map((t) => ({ ...t, session: s })));
   const cost = sessions.reduce((a, s) => a + s.totals.cost, 0);
   const out = sessions.reduce((a, s) => a + s.totals.output, 0);
   const read = sessions.reduce((a, s) => a + s.totals.cacheRead, 0);
@@ -103,7 +105,7 @@ export function renderReport(ledger, opts = {}) {
   <section style="display:grid;gap:10px">
     <h2>Where the cost went</h2>
     <div class="tablewrap"><table><thead><tr><th>Turn</th><th>Started by</th><th class="n">Time</th><th class="n">Share</th><th class="n">Cost</th></tr></thead><tbody>
-    ${top.map((t) => `<tr><td class="m"><a href="#turn-${t.index}">#${t.index}</a></td><td>${esc(t.label)}</td><td class="n">${dur(t.durationMs)}</td><td class="n">${cost ? pct(t.all.cost / cost) : '—'}</td><td class="n">${usd(t.all.cost)}</td></tr>`).join('')}
+    ${top.map((t) => `<tr><td class="m"><a href="#${anchor(t.session, t)}">${esc(t.session.sessionId.slice(0, 8))} #${t.index}</a></td><td>${esc(t.label)}</td><td class="n">${dur(t.durationMs)}</td><td class="n">${cost ? pct(t.all.cost / cost) : '—'}</td><td class="n">${usd(t.all.cost)}</td></tr>`).join('')}
     </tbody></table></div>
   </section>
   ${sessions
@@ -111,7 +113,7 @@ export function renderReport(ledger, opts = {}) {
       (s) => `<section class="session">
     <div style="display:grid;gap:4px"><span class="eyebrow">Session</span><h2 class="m" style="font-size:1rem">${esc(s.sessionId)}</h2>
     <span class="m">${esc(s.start)} → ${esc(s.end)} · ${esc(s.models.join(', '))} · ${usd(s.totals.cost)} at list price${s.reportedCost != null ? ` · ${usd(s.reportedCost)} reported by the CLI` : ''}</span></div>
-    <div class="turns">${s.turns.map((t) => turnBlock(t, maxCost)).join('\n')}</div>
+    <div class="turns">${s.turns.map((t) => turnBlock(s, t, maxCost)).join('\n')}</div>
   </section>`
     )
     .join('\n')}

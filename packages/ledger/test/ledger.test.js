@@ -135,9 +135,38 @@ test('the report shows the overview and every turn, and escapes what it prints',
   const ledger = buildLedger([fixture()]);
   const html = renderReport(ledger, { title: 'Test <ledger>', budget: budgetStatus(samples(['2026-10-26T12:00:00Z', 0.2, 0.3])) });
   assert.ok(html.includes('<title>Test &lt;ledger&gt;</title>'));
-  assert.ok(html.includes('id="turn-1"') && html.includes('id="turn-2"'));
+  assert.ok(html.includes('id="turn-sess1-1"') && html.includes('id="turn-sess1-2"'));
   assert.ok(html.includes('Find the login code'));
   assert.ok(html.includes('Please fix the &lt;login&gt; page'));
   assert.ok(!html.includes('<!doctype'));
   assert.ok(renderReport(ledger, { standalone: true }).startsWith('<!doctype html>'));
+});
+
+test('builds sessions from saved list_events result events, for sessions not on disk', async () => {
+  const { sessionsFromEvents } = await import('../src/index.js');
+  const result = (uuid, at, ms, cost, extra = {}) => ({
+    created_at: at,
+    result: {
+      uuid,
+      internal_anthropic_catchall: {
+        duration_ms: ms,
+        num_turns: 2,
+        stop_reason: 'end_turn',
+        session_id: 'coord-1',
+        total_cost_usd: 1,
+        model_usage_since_last_result: {
+          'claude-opus-5-5[1m]': { canonicalModel: 'claude-opus-5-5', inputTokens: 2, cacheReadInputTokens: 80000, cacheCreationInputTokens: 2000, outputTokens: 100, costUSD: cost }
+        },
+        ...extra
+      }
+    }
+  });
+  const page1 = JSON.stringify({ ccr: { data: [result('u1', '2026-10-26T17:18:35Z', 14000, 0.04, { origin: { kind: 'human' } })] } });
+  const page2 = JSON.stringify({ ccr: { data: [result('u2', '2026-10-26T17:33:03Z', 21000, 0.07, { result: 'Round 2 is done.' }), result('u1', '2026-10-26T17:18:35Z', 14000, 0.04)] } });
+  const [s] = sessionsFromEvents([page1, page2]);
+  assert.equal(s.sessionId, 'coord-1');
+  assert.equal(s.turns.length, 2, 'the same event on two pages counts once');
+  assert.deepEqual([s.turns[0].origin, s.turns[0].start, s.turns[1].label], ['human', '2026-10-26T17:18:21.000Z', 'Round 2 is done.']);
+  assert.equal(Number(s.totals.cost.toFixed(2)), 0.11);
+  assert.deepEqual(s.models, ['claude-opus-5-5']);
 });
