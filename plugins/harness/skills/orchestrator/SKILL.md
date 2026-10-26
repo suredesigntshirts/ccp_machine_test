@@ -27,7 +27,7 @@ again in every shell command, since variables do not carry over.
 
 ## Every wake
 
-0. **Check the store.** `$H doctor` must print `"ok": true`. If it lists problems, change nothing:
+0. **Check the store.** `$H doctor` (which also replays the event log) must print `"ok": true`. If it lists problems, change nothing:
    report them in the thread and stop.
 
 1. **Turn what happened into events.** One `send` per fact, with an `--id` taken from the fact so a
@@ -104,3 +104,5 @@ again in every shell command, since variables do not carry over.
 - Never run two orchestrators on one store. A held lock error means another writer is active: stop
   and say so.
 - Tier 2 and 3 decisions always go to the person in v1.
+- When the harness misbehaves on a real store, add a scenario to `packages/harness/scenarios/` that
+  reproduces it (failing first), then fix the spec, so the suite grows from use.

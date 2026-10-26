@@ -31,6 +31,9 @@ The harness spec and the runtime that drives it.
   tokens and cost from the session ledgers (n/a without one; items running at the same time share
   turns), and wall time. Mission control shows it as the Attention column of finished items; the digest
   shows touches per item today against the day before.
+- `src/replay.js`: `harness replay` rebuilds the harness from `events.jsonl` on a scratch copy and compares
+  state values, children and shared context keys with `state.json`, and regenerated effects with the outbox;
+  it names the first divergent event and exits 1. Context keys only one side has are notes (a spec change).
 - `src/stalled.js`: `harness stalled [--after 60m]` lists in-flight items whose last event is older than
   the limit; mission control shows how long ago each in-flight item moved.
 - `src/doctor.js`: `harness doctor` checks the store (event version gaps, acks for unknown effects, effects
@@ -38,6 +41,10 @@ The harness spec and the runtime that drives it.
 - `src/card.js`: `harness card <effect-id>` turns a `postDecisionCard` effect into `request_decision`
   arguments (approve, revise or drop, with the stand-in's lean recommended) plus the decision's `address`
   and `choices`; a tap on option i is `PERSON_DECIDED {choice: choices[i]}` with the card's id as `--id`.
+- `src/scenario.js` and `scenarios/*.json`: golden event stories. Each step is an event (with `to`, `id`,
+  `now`) and an `expect` of `effects` (exact, `dispatchRun:<step>`), `items` `{id: state}`, `scheduler`,
+  `budget`, `inFlight`, `queued`, `inbox`, `needsPerson`, `duplicate` or `standin` `{class: autonomy}`.
+  `npm run scenarios` (`harness scenarios [FILE...]`) plays each on a scratch store; CI runs it.
 
 ## Use
 
