@@ -74,11 +74,17 @@ again in every shell command, since variables do not carry over.
    | `reportBlocked`, `checkpoint` | Note it on the item's thread; for a checkpoint, ask the worker to commit and push what it has. |
    | `publishDigest` | Post the daily digest: what finished, what is in flight, what waits on the person. |
 
-3. **Refresh the pages.** The Artifact tool publishes only files under the working directory or the
-   scratchpad, so render there: `$H page --title "Harness mission control" --html <scratchpad>/mc/mission-control.html`.
+3. **Take requests, then refresh the pages.** Mission control carries a request box that saves to its
+   Artifact database. List its `requests` collection with `ArtifactData` (action `list`, the mission
+   control URL), save the result to a file, and run `$H intake <file>`. It files each new row as
+   `REQUEST_RECEIVED` (id `req-<row id>`, so a row read twice files once) and prints `updates`; write
+   them back in one `ArtifactData` `batch` of `update`s, so the person sees "filed as <item>" with a link.
+   The Artifact tool publishes only files under the working directory or the scratchpad, so render
+   there: `$H page --request-box --title "Harness mission control" --html <scratchpad>/mc/mission-control.html`.
    It also writes `items/<id>.html` and `decisions.html` and prints their paths; publish the page with
    `root: <scratchpad>/mc` and those paths as `files`, to the same Artifact as before (read it once
-   first in a new thread, or the publish is refused).
+   first in a new thread, or the publish is refused). Declare `capabilities: {db: {}}` on the publish
+   that first adds the box; later publishes omit it to keep it.
 
 4. **File the turn ledgers.** `node $HOME/harness/packages/ledger/bin/ledger.js file` files this session's
    transcripts in `/mnt/project-files/harness/ledger/sessions`; for a worker thread, save its `list_events`
