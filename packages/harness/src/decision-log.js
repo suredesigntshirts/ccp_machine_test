@@ -17,12 +17,14 @@ export function readDecisionLog(store) {
 
 function row(e) {
   const d = e.detail ?? {};
+  // The decision's id is decision:<item>:<class>:<n>; early effects carried no detail, so the id is the fallback.
+  const parts = (e.subject ?? '').split(':');
   return {
     effectId: e.id,
     at: e.at,
-    item: e.subject?.split(':')[1] ?? null,
+    item: parts.length >= 4 ? parts.slice(1, -2).join(':') : null,
     decision: e.subject,
-    decisionClass: d.decisionClass ?? null,
+    decisionClass: d.decisionClass ?? (parts.length >= 4 ? parts.at(-2) : null),
     tier: d.tier ?? null,
     question: d.question ?? null,
     choice: d.choice ?? null,
