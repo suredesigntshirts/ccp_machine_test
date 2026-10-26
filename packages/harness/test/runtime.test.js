@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openStore, init, apply, ack, status, renderPage } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, budgetEvents } from '../src/index.js';
 
 const fresh = (input) => {
   const store = openStore(mkdtempSync(join(tmpdir(), 'harness-')));
@@ -78,4 +78,17 @@ test('the page escapes what it shows', () => {
   apply(store, { type: 'REQUEST_RECEIVED', request: { id: '<x>', tier: 0, title: '<script>alert(1)</script>' } });
   const html = renderPage(status(store), { events: store.events(), pending: store.pending() });
   assert.ok(!html.includes('<script>alert'));
+});
+
+test('usage samples reach the scheduler: a spent slice halts starts, and feeding twice is a no-op', () => {
+  const store = fresh();
+  const samples = [
+    { at: '2026-10-26T01:00:00Z', sevenDay: 0.3, fiveHour: 0.1, sevenDayResetsAt: 1 },
+    { at: '2026-10-26T12:00:00Z', sevenDay: 0.41, fiveHour: 0.2, sevenDayResetsAt: 1 }
+  ];
+  for (const round of [1, 2]) for (const e of budgetEvents(samples)) apply(store, e.event, { to: e.to, id: e.id });
+  const st = status(store);
+  assert.equal(st.budget.mode, 'paused');
+  assert.equal(st.state.scheduler, 'halted');
+  assert.equal(store.events().length, 2);
 });
