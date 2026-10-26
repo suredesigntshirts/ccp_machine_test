@@ -13,3 +13,4 @@ export { replay } from './replay.js';
 export { stalled, lastMoved, parseAfter } from './stalled.js';
 export { repair } from './repair.js';
 export { attention, attentionText, touchesTrend } from './attention.js';
+export { canaryRequest, canaryReport, canaryId, CANARY_LATE_MS } from './canary.js';

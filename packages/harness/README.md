@@ -43,6 +43,10 @@ The harness spec and the runtime that drives it.
   `events.jsonl` (a crash between the two writes) from the log, so the host can resend the lost event.
   `test/chaos.test.js` injects each fault: a crash, a stale lock, racing writer processes, duplicates,
   torn lines and a slow mount.
+- `src/canary.js`: `harness canary` files the day's tier-0 canary item (bump `canary/last.txt`, PR, CI,
+  merge) once per UTC day. `harness canary --check` times each stage and exits 1 with one attention line
+  when the canary failed or is not merged 2 hours after the request. The digest leads with the canary when
+  a stage is slow (triage over 15m, build over 30m, verify over 30m, merge over 15m) or failed.
 - `src/card.js`: `harness card <effect-id>` turns a `postDecisionCard` effect into `request_decision`
   arguments (approve, revise or drop, with the stand-in's lean recommended) plus the decision's `address`
   and `choices`; a tap on option i is `PERSON_DECIDED {choice: choices[i]}` with the card's id as `--id`.

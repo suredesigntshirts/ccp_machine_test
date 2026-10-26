@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair } from '../src/index.js';
+import { openStore, init, apply, ack, status, renderPage, renderItemPage, itemHref, budgetEvents, logPrecedents, readDecisionLog, renderDecisionLog, ladder, writeDigest, doctor, cardFor, stalled, parseAfter, replay, runScenarios, attention, attentionText, repair , canaryRequest, canaryReport } from '../src/index.js';
 const HELP = `harness <command> [options]
 
   init [--wip N]                 create a harness in --dir
@@ -22,6 +22,9 @@ const HELP = `harness <command> [options]
   decisions                      append logPrecedent effects to decisions.jsonl in the store and ack them
   standin <class>                the stand-in's autonomy for a decision class (shadow, recommend or act),
                                  worked out from decisions.jsonl; use it as STAND_IN_ANSWERED's autonomy
+  canary [--day D] [--check]     file the day's tier-0 canary item once (canary-<day>); with --check, report
+                                 each stage's time and exit 1 with one attention line if it failed or is
+                                 not merged 2 hours after the request
   digest [--day YYYY-MM-DD]      send DIGEST_DUE once per UTC day, write digests/<day>.md in the store
                                  and ack publishDigest; the host posts the text
   replay                         rebuild the harness from events.jsonl on a scratch copy and compare state
@@ -61,6 +64,7 @@ const { values: o, positionals: [cmd, ...args] } = parseArgs({
     after: { type: 'string', default: '60m' },
     sessions: { type: 'string' },
     rebuild: { type: 'boolean', default: false },
+    check: { type: 'boolean', default: false },
     now: { type: 'string' }
   }
 });
@@ -122,6 +126,21 @@ try {
       if (!args[0]) throw new Error('standin needs a decision class, such as plan or accept');
       print(ladder(readDecisionLog(store), args[0]));
       break;
+    case 'canary': {
+      const day = o.day ?? new Date().toISOString().slice(0, 10);
+      if (!o.check) {
+        const r = apply(store, canaryRequest(day), { id: `req-canary-${day}` });
+        print({ item: `canary-${day}`, filed: !r.duplicate, effects: r.effects.map((e) => e.name) });
+        break;
+      }
+      const report = canaryReport(store.events(), day);
+      print(report);
+      if (['failed', 'late'].includes(report.status)) {
+        console.error(`attention: ${report.line}`);
+        process.exitCode = 1;
+      }
+      break;
+    }
     case 'digest': {
       const { file, acked, text } = writeDigest(store, o.day ? { day: o.day } : {});
       console.log(text);
