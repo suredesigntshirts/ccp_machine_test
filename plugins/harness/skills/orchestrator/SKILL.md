@@ -49,6 +49,11 @@ again in every shell command, since variables do not carry over.
    | Something blocks the item | `BLOCK`, later `UNBLOCKED` | `item:<id>` | |
    | The person drops the item | `CANCEL` | `item:<id>` | the person's message id |
 
+   For a GitHub PR event, save the `<event source="github" ...>` text to a file and run
+   `$H from-github <file>` instead of writing the CI or merge row yourself. It finds the item from the
+   `pr` on its events, sends `CHECKS_PASSED`, `CHECKS_FAILED` or `MERGED` with the ids above (`ci-<sha7>`,
+   `merge-pr<N>`), acks the merge effect, and reports `stale` when the item is not waiting for it.
+
    The verify step has no `RUN_SUCCEEDED`: the item ignores it while verifying, and only the CI result
    moves it on. Put `"pr": "<url>"` on the build's `RUN_SUCCEEDED`, the CI event and `MERGED`, so the
    item page links the PR (no event stores it in the machine). Give a request `expect` (what done looks
