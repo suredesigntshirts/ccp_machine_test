@@ -5,4 +5,4 @@ Monorepo for the tools the agent harness needs (design and spec: `suredesigntshi
 
 | Package | What it does |
 |---|---|
-| (none yet) | |
+| [`packages/ledger`](packages/ledger) | Turn-level audit ledger of Claude Code sessions: turns, requests, tools, subagents, cost, usage windows and budget, with an HTML report |
