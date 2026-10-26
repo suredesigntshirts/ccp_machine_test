@@ -57,9 +57,9 @@ again in every shell command, since variables do not carry over.
    | Effect | What you do |
    |---|---|
    | `dispatchRun` (`params.step`: triage, build, verify) | Start or message the item's worker thread with the step and the item's detail. One worker thread per item. Triage writes its plan to `$HARNESS_DIR/plans/<id>.md`; build works on a branch named per the repo's CLAUDE.md and opens the PR; verify is CI on that PR, so ack it when CI starts. |
-   | `askStandIn` | Judge the decision yourself from `$HARNESS_DIR/decisions.jsonl` and the person's past choices; then send `STAND_IN_ANSWERED`. Use autonomy `act` only where the class has earned it (`decisions.html` shows it: 20 decisions, at least 90% agreement), or where the person's own message gives standing authority for this work (quote its time in `reason`); otherwise `recommend`, which posts a card and waits for the person. |
+   | `askStandIn` | Judge the choice yourself from `$HARNESS_DIR/decisions.jsonl` and the person's past choices. Take the autonomy from `$H standin <detail.decisionClass>` (the ladder: starts at `recommend`, 20 agreeing decisions climb a rung, a reversal drops one) and never set it by hand, then send `STAND_IN_ANSWERED`. `recommend` and `shadow` post a card and wait for the person. The one exception is standing authority in the person's own message for this work: then send `act` and quote that message's time in `reason`. |
    | `postDecisionCard` | Post one `request_decision` card in the item's thread, with the stand-in's lean as the recommendation. |
-   | `logPrecedent` | Run `$H decisions`: it appends every logPrecedent effect to `$HARNESS_DIR/decisions.jsonl` and acks them. |
+   | `logPrecedent` | Run `$H decisions`: it appends every logPrecedent effect to `$HARNESS_DIR/decisions.jsonl` and acks them. Run it before `$H standin`, so the ladder sees the latest decisions. |
    | `mergePullRequest` | Merge the item's PR once CI is green on its head (`expectedHeadSha` takes the full 40-character sha). |
    | `reportBlocked`, `checkpoint` | Note it on the item's thread; for a checkpoint, ask the worker to commit and push what it has. |
    | `publishDigest` | Post the daily digest: what finished, what is in flight, what waits on the person. |
