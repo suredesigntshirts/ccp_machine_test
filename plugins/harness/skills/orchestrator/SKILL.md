@@ -120,8 +120,10 @@ next actions. Keep anything the machines do not know (a card posted by hand, a c
    one has a reading newer than 2 hours; save each, then `ledger usage <files...>` (the newest wins) and
    `$H usage --samples .ledger/usage.json`. When the page has no reading, run `ledger estimate` first: it adds
    a sample estimated from the cost of the turns filed since the last reading (marked estimated on mission
-   control), and a real reading replaces it. It also sends a `TICK`: with no reading newer than 2 hours the budget drains,
-   so fetch a fresh reading at least that often while work is in flight (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`
+   control), and a real reading replaces it. It also sends a `TICK` that carries the cost of the turns filed since the
+   newest reading (file the ledgers first, step 4): the budget drains when that projected spend reaches the
+   soft limit, or when the reading is over 24 hours old, so an idle harness keeps accepting on an old
+   reading while a busy one needs a fresh reading (`$H tick` alone checks it). Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
 
 7. **Write the hand-off.** `$H handoff` rewrites `handoff.md`, so the next thread can pick up from here.
