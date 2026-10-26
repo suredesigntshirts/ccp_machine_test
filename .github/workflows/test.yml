@@ -20,8 +20,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run scenarios
-      # The apt step behind --with-deps can hang on a slow mirror; fail fast instead.
-      - run: npx playwright install --with-deps chromium
+      # Browser only: ubuntu-latest already has Chromium's libraries, and --with-deps spent its whole
+      # timeout fetching fonts from a slow apt mirror. Fail fast if the download stalls.
+      - run: npx playwright install chromium
         timeout-minutes: 6
       - run: npm run pages:check -w @ccp/harness -- --shots shots
       - uses: actions/upload-artifact@v4
