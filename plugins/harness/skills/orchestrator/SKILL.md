@@ -102,6 +102,13 @@ again in every shell command, since variables do not carry over.
    `$H stalled --after 60m`; for each item it lists, read its worker thread and turn what you find into
    events, or send `BLOCK` with the reason.
 
+## Weekly: the retro
+
+When `$H retro --due` exits 0 (7 days, or 20 merges, since the last retro), run `$H retro`. It writes
+`harness/reviews/<day>.md` and `.json` in the Library. File each of its bottleneck drafts as a
+`harness-backlog` issue, with the expected metric change in the body, and work the first one next.
+The next retro checks whether each expectation was met.
+
 ## Rules
 
 - Budget first: if `status` shows the scheduler `halted`, start nothing; if `draining`, only finish
