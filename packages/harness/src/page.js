@@ -1,10 +1,10 @@
 // Mission control: one page that answers, at a glance, what needs the person, what is in flight and
 // where each item stands, and what the harness has asked the host to do. Rebuilt from the store on
 // every change; no scripts are needed to read it.
-const esc = (s) =>
+export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const time = (iso) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');
-const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`);
+export const time = (iso) => (iso ? iso.slice(5, 16).replace('T', ' ') : '');
+export const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`);
 
 // The work item's path, in order; gate and awaiting states fold into the stage they guard.
 const STAGES = [
@@ -17,10 +17,10 @@ const STAGES = [
   ['merge', ['integrationGate', 'awaitingMergeDecision', 'merging']],
   ['done', ['done']]
 ];
-const leaf = (state) => state.split('.').pop();
+export const leaf = (state) => state.split('.').pop();
 const stageOf = (state) => STAGES.findIndex(([, leaves]) => leaves.includes(leaf(state)));
 
-const CSS = `
+export const CSS = `
 :root{--bg:#f4f6f7;--surface:#fff;--fg:#17222b;--muted:#5d6a75;--line:#d6dde2;--accent:#1f6f8b;--accent-soft:#e2eff4;--warn:#a8620b;--warn-soft:#fbefdc;--bad:#b23b3b;--bad-soft:#f8e3e3;--ok:#2e7d4f;--ok-soft:#e1f2e7;
 --sans:"Instrument Sans","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f161c;--surface:#16212a;--fg:#e3eaef;--muted:#98a6b1;--line:#2a3843;--accent:#6bb8d4;--accent-soft:#17323e;--warn:#e6a556;--warn-soft:#3a2a14;--bad:#ec8a8a;--bad-soft:#3b1d1d;--ok:#74c895;--ok-soft:#173326;color-scheme:dark}}
@@ -37,10 +37,10 @@ const CSS = `
 .tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:.86rem;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font:500 .68rem/1.2 var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}tr:last-child td{border-bottom:0}
 .track{display:flex;gap:3px;min-width:220px}.track span{flex:1;height:8px;border-radius:3px;background:var(--line)}.track span.past{background:var(--accent)}.track span.now{background:var(--warn)}.track.ok span{background:var(--ok)}
-code{font-family:var(--mono);font-size:.8rem;overflow-wrap:anywhere}
+a{color:var(--accent)}code{font-family:var(--mono);font-size:.8rem;overflow-wrap:anywhere}
 `;
 
-function track(item) {
+export function track(item) {
   if (item.state === 'done') return `<div class="track ok" title="done">${STAGES.map(() => '<span></span>').join('')}</div>`;
   const at = stageOf(item.state);
   return `<div class="track" title="${esc(item.state)}">${STAGES.map((_, i) => `<span class="${i < at ? 'past' : i === at ? 'now' : ''}"></span>`).join('')}</div>`;
@@ -57,9 +57,10 @@ function decisionCard(item, d) {
 
 /**
  * @param {object} st from status()
- * @param {{events?: object[], pending?: object[], title?: string, standalone?: boolean}} opts
+ * @param {{events?: object[], pending?: object[], title?: string, standalone?: boolean, itemLinks?: boolean}} opts
+ *   itemLinks: link each item to items/<id>.html (written next to the page by `harness page`)
  */
-export function renderPage(st, { events = [], pending = [], title = 'Mission control', standalone = false } = {}) {
+export function renderPage(st, { events = [], pending = [], title = 'Mission control', standalone = false, itemLinks = false } = {}) {
   const live = st.items.filter((i) => !i.done);
   const finished = st.items.filter((i) => i.done);
   const asks = live.flatMap((i) => i.decisions.filter((d) => d.state === 'awaitingPerson').map((d) => decisionCard(i, d)));
@@ -68,7 +69,7 @@ export function renderPage(st, { events = [], pending = [], title = 'Mission con
   const rows = (items) =>
     items
       .map(
-        (i) => `<tr><td><b>${esc(i.id)}</b>${i.title ? `<br><span class="m">${esc(i.title)}</span>` : ''}</td><td class="m">${esc(i.project ?? '')}</td><td class="m">${esc(i.tier)}</td><td>${track(i)}<span class="m">${esc(leaf(i.state))}</span></td><td class="m">${esc(i.runs ?? 0)}${i.retries ? ` (${i.retries} retry)` : ''}</td><td>${i.url ? `<a href="${esc(i.url)}">link</a>` : ''}</td></tr>`
+        (i) => `<tr><td><b>${itemLinks ? `<a href="${esc(itemHref(i.id))}">${esc(i.id)}</a>` : esc(i.id)}</b>${i.title ? `<br><span class="m">${esc(i.title)}</span>` : ''}</td><td class="m">${esc(i.project ?? '')}</td><td class="m">${esc(i.tier)}</td><td>${track(i)}<span class="m">${esc(leaf(i.state))}</span></td><td class="m">${esc(i.runs ?? 0)}${i.retries ? ` (${i.retries} retry)` : ''}</td><td>${i.url ? `<a href="${esc(i.url)}">link</a>` : ''}</td></tr>`
       )
       .join('');
   const head = '<thead><tr><th>Item</th><th>Project</th><th>Tier</th><th>Stage</th><th>Runs</th><th></th></tr></thead>';
@@ -102,7 +103,14 @@ ${finished.length ? `<section><h2>Finished</h2><div class="tablewrap"><table>${h
       : '<div class="empty">No events yet.</div>'
   }</section>
 </div>`;
-  const meta = `<title>${esc(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<style>${CSS}</style>`;
+  return wrapPage(title, body, { standalone });
+}
+
+export const itemHref = (id) => `items/${encodeURIComponent(id)}.html`;
+
+/** Wrap a page body. A standalone page carries its own doctype, as supporting HTML files must. */
+export function wrapPage(title, body, { standalone = false, css = CSS } = {}) {
+  const meta = `<title>${esc(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<style>${css}</style>`;
   return standalone
     ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">${meta}</head><body>${body}</body></html>`
     : `${meta}\n${body}`;
