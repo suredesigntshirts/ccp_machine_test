@@ -110,7 +110,7 @@ export function status(store) {
     state: s.value,
     context: s.context,
     needsPerson: s.value.attention === 'needsPerson',
-    budget: budget ? { mode: valueText(budget.value), ...pick(budget.context, ['sevenDay', 'fiveHour', 'dayStartSevenDay', 'dailyShare', 'softAt']) } : null,
+    budget: budget ? { mode: valueText(budget.value), ...pick(budget.context, ['sevenDay', 'fiveHour', 'dayStartSevenDay', 'dailyShare', 'softAt', 'sampledAt']) } : null,
     items
   };
 }
