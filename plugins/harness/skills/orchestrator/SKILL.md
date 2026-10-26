@@ -70,7 +70,13 @@ again in every shell command, since variables do not carry over.
    `root: <scratchpad>/mc` and those paths as `files`, to the same Artifact as before (read it once
    first in a new thread, or the publish is refused).
 
-4. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
+4. **Refresh the ledger report.** `node $HOME/harness/packages/ledger/bin/ledger.js refresh --title "Session ledger" --html <scratchpad>/ledger/report.html`
+   merges the sessions the plugin filed in `/mnt/project-files/harness/ledger/sessions` into
+   `.ledger/ledger.json` and renders them with `.ledger/usage.json`'s budget; publish it to the ledger report
+   Artifact (https://claude.ai/artifact/KG3nqfYx8JY9PXeWJowbSS). Run it from the same folder as the usage
+   step below, so both use one `.ledger/`.
+
+5. **Feed usage.** Fetch this session's newest `rate_limit_event` (`list_events` with
    `kinds: ["rate_limit_event"]`, `limit: 100`), save it, then `ledger usage <file>` and
    `$H usage --samples .ledger/usage.json`. Stop starting work when the scheduler leaves `accepting`
    or the 7-day window reaches the ceiling the person set.
