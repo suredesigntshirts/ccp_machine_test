@@ -102,8 +102,8 @@ ${finished.length ? `<section><h2>Finished</h2><div class="tablewrap"><table>${h
       : '<div class="empty">No events yet.</div>'
   }</section>
 </div>`;
-  const page = `<style>${CSS}</style>\n${body}`;
+  const meta = `<title>${esc(title)}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<style>${CSS}</style>`;
   return standalone
-    ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title></head><body>${page}</body></html>`
-    : page;
+    ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">${meta}</head><body>${body}</body></html>`
+    : `${meta}\n${body}`;
 }
