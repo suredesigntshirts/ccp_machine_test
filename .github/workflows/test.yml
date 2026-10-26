@@ -15,3 +15,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run scenarios
+      - run: npx playwright install --with-deps chromium
+      - run: npm run pages:check -- --shots shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: page-shots
+          path: packages/harness/shots
