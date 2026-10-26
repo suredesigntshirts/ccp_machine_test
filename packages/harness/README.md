@@ -60,6 +60,10 @@ The harness spec and the runtime that drives it.
 - `src/intake.js`: the request box. `harness page --request-box` adds an "Ask for work" form to mission
   control that saves to the Artifact `db` collection `requests`; `harness intake FILE` files each new row
   as `REQUEST_RECEIVED` (`req-<row id>`, idempotent) and prints the updates that mark rows taken.
+- `src/sim.js`: `npm run sim` drives 12 synthetic items (every tier, a failed run, failed checks, a block,
+  a person's revise) through a scratch store at WIP 3 and at WIP 12 with a scripted host. It checks the
+  WIP limit, the queue, the outbox, doctor, the page size and an apply at 500 events, and saves the
+  busiest mission control to `--out`.
 - `src/card.js`: `harness card <effect-id>` turns a `postDecisionCard` effect into `request_decision`
   arguments (approve, revise or drop, with the stand-in's lean recommended) plus the decision's `address`
   and `choices`; a tap on option i is `PERSON_DECIDED {choice: choices[i]}` with the card's id as `--id`.
