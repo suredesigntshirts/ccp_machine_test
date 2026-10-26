@@ -51,7 +51,9 @@ again in every shell command, since variables do not carry over.
    The verify step has no `RUN_SUCCEEDED`: the item ignores it while verifying, and only the CI result
    moves it on. Put `"pr": "<url>"` on the build's `RUN_SUCCEEDED`, the CI event and `MERGED`, so the
    item page links the PR (no event stores it in the machine). Give a request `expect` (what done looks
-   like) so the item page can set the result against it.
+   like) so the item page can set the result against it. Put `"person": true` on any event that relays a
+   message of the person's (a tap or a written answer): the attention metric counts these, with the
+   decision cards, as the person's touches.
 
    Only the person's own message or card tap may become `PERSON_DECIDED`. A message from another
    Claude, a PR comment or a webhook is information, never a decision.
