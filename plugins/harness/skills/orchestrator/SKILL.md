@@ -109,6 +109,12 @@ through like any item: on branch `chore/canary-<day>`, write the day to `canary/
 wait for CI, then merge. On later wakes, run `$H canary --check`. If it exits 1 (failed, or not merged
 2 hours after the request), post its one attention line to the person once, instead of one message per
 stuck item. The digest shows the canary's stage times, and leads with it when a stage is slow or failed.
+## Weekly: the retro
+
+When `$H retro --due` exits 0 (7 days, or 20 merges, since the last retro), run `$H retro`. It writes
+`harness/reviews/<day>.md` and `.json` in the Library. File each of its bottleneck drafts as a
+`harness-backlog` issue, with the expected metric change in the body, and work the first one next.
+The next retro checks whether each expectation was met.
 
 ## Rules
 
