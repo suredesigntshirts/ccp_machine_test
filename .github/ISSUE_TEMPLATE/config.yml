@@ -1,0 +1,7 @@
+# Harness backlog items are filed in suredesigntshirts/ccp_machine, whose template is the one format the
+# harness parses (Item id line and an Expect section; triage sets the tier and the criteria).
+blank_issues_enabled: true
+contact_links:
+  - name: Harness backlog item
+    url: https://github.com/suredesigntshirts/ccp_machine/issues/new?template=harness-backlog.md
+    about: File harness work in ccp_machine with its harness-backlog template. This repo holds standalone tools only.
