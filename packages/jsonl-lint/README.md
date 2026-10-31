@@ -5,14 +5,17 @@ Report every row of a JSONL file that is not valid JSON. Node.js 22+, plain ES m
 ## Usage
 
 ```
-node packages/jsonl-lint/bin/jsonl-lint.js <file>
+node packages/jsonl-lint/bin/jsonl-lint.js <file> [<file> ...]
 ```
 
-(or `jsonl-lint <file>` once the workspace is linked by `npm install`).
+(or `jsonl-lint <file> [<file> ...]` once the workspace is linked by `npm install`).
+
+Files are checked in the order given. A file named `-` is read from stdin and reported as `-`; it may
+appear at most once.
 
 ## Output format
 
-One line on stdout per bad row, using the file argument exactly as given:
+One line on stdout per bad row, using each file argument exactly as given (`-` for stdin):
 
 ```
 <file>:<line>: <error>
@@ -24,9 +27,16 @@ checked, so a torn (truncated) last row is reported.
 
 ## Exit codes
 
-- `0`: every row is valid (nothing printed)
-- `1`: at least one bad row
-- `2`: no argument, or the file is missing or unreadable (message on stderr)
+- `0`: every row of every file is valid (nothing printed)
+- `1`: at least one bad row in any file
+- `2`: no file named, `-` given more than once (nothing is checked), or any file is missing or
+  unreadable (`jsonl-lint: cannot read <file>: ...` on stderr; the other files are still checked and
+  reported). 2 takes precedence over 1.
+
+## Stdin
+
+`cat rows.jsonl | jsonl-lint -` lints standard input; bad rows are reported as `-:<line>: <error>`.
+Naming `-` twice is a usage error (exit 2).
 
 ## API
 
