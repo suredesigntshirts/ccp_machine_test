@@ -1,0 +1,17 @@
+{
+  "name": "jsonl-lint",
+  "version": "0.1.0",
+  "description": "Report every row of a JSONL file that is not valid JSON",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": "./src/index.js",
+  "bin": {
+    "jsonl-lint": "bin/jsonl-lint.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
