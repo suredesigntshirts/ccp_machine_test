@@ -10,7 +10,8 @@ repo. Nothing here is cloned or loaded by the harness at runtime.
 
 ## What is here
 
-- No tools yet: `packages/` is empty, and `npm test` says so and passes.
+- `packages/jsonl-lint/`: `jsonl-lint <file>` reports every row of a JSONL file that is not valid JSON
+  (`<file>:<line>: <error>`, exit 1 if any, 0 if none, 2 on a usage or read error), plus a `lint(text)` API.
 - `canary/last.txt`: the file the harness's daily tier-0 canary item bumps through a PR, CI and merge.
 - `plugins/harness/skills/orchestrator/`: the parked orchestrator skill. Its prose drifted from the
   machines, so it is not in the plugin; it comes back only once it is derived from them again.
